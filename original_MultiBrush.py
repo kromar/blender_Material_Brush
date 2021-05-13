@@ -1,12 +1,10 @@
 bl_info = {
-    'name': 'MultiBrush Material Brush Painter',
-    'author': 'Francisco Elizade, Daniel Grauer',
-    'version': (1, 0, 0),
-    'blender': (2, 92, 0),
-    'location': 'View3D - Texture Paint mode',
-    'description': 'Paint all texture layers of materials simultaneously',
-    'category': 'Image Paint',
-    'wiki_url': 'https://github.com/kromar/blender_PBR_Brush',
+    "name": "MultiBrush Material Brush Painter",
+    "author": "Francisco Elizade",
+    "blender": (2, 7, 7),
+    "location": "View3D - Texture Paint mode",
+    "description": "Paint all texture layers of materials simultaneously",
+    "category": "Image Paint",
 }
 
 import bpy
@@ -15,7 +13,6 @@ import math
 import random
 import copy
 import string
-from bpy.utils import register_class, unregister_class
 from bpy.props import IntProperty, StringProperty, CollectionProperty
 from bpy.types import Panel, UIList
 
@@ -114,8 +111,8 @@ class Uilist_actions(bpy.types.Operator):
 class UL_brushitems(UIList):
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
-        split = layout.split(factor=0.3)
-        split.label(text="Index: %d" % (index))
+        split = layout.split(0.3)
+        split.label("Index: %d" % (index))
         split.prop(item, "name", text="", emboss=False, translate=False, icon='MATERIAL')
 
     def invoke(self, context, event):
@@ -129,12 +126,10 @@ class UL_brushitems(UIList):
 class UIListMaterial(Panel):
     """Creates a Panel in the Object properties window"""
     bl_idname = 'OBJECT_PT_my_panel'
-    bl_space_type = 'VIEW_3D'    
-    bl_region_type = 'UI'
-    bl_category = 'Tool'
-
+    bl_space_type = 'VIEW_3D'
     bl_context = 'imagepaint'
-
+    bl_category = 'Tools'
+    bl_region_type = 'TOOLS'
     bl_label = "MultiBrush: Material Brush Paint"
 
     def draw(self, context):
@@ -143,7 +138,7 @@ class UIListMaterial(Panel):
 
         rows = 2
         row = layout.row()
-        row.label(text="Select Brush:")
+        row.label("Select Brush:")
         col = row.column(align=True)
         col.operator("listbrushmats.list_action", icon='GROUP_VCOL', text="").action = 'UPDATE'
         
@@ -386,18 +381,10 @@ def main(context,bn):
 # -------------------------------------------------------------------
 # register
 # -------------------------------------------------------------------
-classes = (
-    Uilist_actions,
-    UL_brushitems,
-    UIListMaterial,
-    CustomProp,
-    material_paint,    
-    )
 
-
-def register():    
-    [register_class(c) for c in classes]
-
+def register():
+    #import bpy
+    bpy.utils.register_module(__name__)
     bpy.types.Scene.listbrushmats = CollectionProperty(type=CustomProp)
     km = bpy.context.window_manager.keyconfigs.default.keymaps['Image Paint']
     kmi = km.keymap_items.new("paint.material_paint", 'LEFTMOUSE', 'PRESS', alt=True)
@@ -407,9 +394,8 @@ def register():
     #bpy.types.Scene.listmaterials = CollectionProperty(type=CustomProp)
     #bpy.types.Scene.custom_index = IntProperty()
 
-def unregister():    
-    [unregister_class(c) for c in classes]
-        
+def unregister():
+    bpy.utils.unregister_module(__name__)
     del bpy.types.Scene.listbrushmats
     km = bpy.context.window_manager.keyconfigs.default.keymaps['Image Paint']
     kmi = km.keymap_items.find('paint.material_paint')
