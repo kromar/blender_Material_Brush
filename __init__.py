@@ -1,7 +1,7 @@
 bl_info = {
-    'name': 'MultiBrush Material Brush Painter',
+    'name': 'PBR Brush',
     'author': 'Francisco Elizade, Daniel Grauer',
-    'version': (1, 0, 0),
+    'version': (1, 0, 1),
     'blender': (2, 92, 0),
     'location': 'View3D - Texture Paint mode',
     'description': 'Paint all texture layers of materials simultaneously',
@@ -29,7 +29,7 @@ class Uilist_actions(bpy.types.Operator):
     bl_idname = "listbrushmats.list_action"
     bl_label = "List Action"
 
-    action = bpy.props.EnumProperty(
+    action: bpy.props.EnumProperty(
         items=(
             ('SAVE', "Up", ""),
             ('LOAD', "Down", ""),
@@ -111,7 +111,7 @@ class Uilist_actions(bpy.types.Operator):
 # -------------------------------------------------------------------
     
 # custom list
-class UL_brushitems(UIList):
+class PBRB_UL_brushitems(UIList):
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         split = layout.split(factor=0.3)
@@ -148,7 +148,7 @@ class UIListMaterial(Panel):
         col.operator("listbrushmats.list_action", icon='GROUP_VCOL', text="").action = 'UPDATE'
         
         row = layout.row()
-        row.template_list("UL_brushitems", "", scn, "listbrushmats", scn, "brush_index", rows=rows)
+        row.template_list("PBRB_UL_brushitems", "", scn, "listbrushmats", scn, "brush_index", rows=rows)
         
         
         row = layout.row()
@@ -162,15 +162,15 @@ class UIListMaterial(Panel):
         #row.template_list("UL_items", "", scn, "listmaterials", scn, "custom_index", rows=rows)
         
         #set the texfaces using this material.
-        bn = bpy.context.scene.brush_index      #brush iNdex
+        brush_index = bpy.context.scene.brush_index      #brush iNdex
         #mn = bpy.context.scene.custom_index     #material iNdex        
-        main(bpy.context, bn)
+        main(bpy.context, brush_index)
 
 # Create custom property group
 class CustomProp(bpy.types.PropertyGroup):
     '''name = StringProperty() '''
-    id = IntProperty()
-    prueba = IntProperty()
+    id: IntProperty()
+    prueba: IntProperty()
     #temp_images = []
     
 class material_paint(bpy.types.Operator):
@@ -217,7 +217,7 @@ class material_paint(bpy.types.Operator):
             stroke.append( self.fill_brush_stroke( x, y ) )
             stroke[0]["is_start"] = True
             
-            bn = bpy.context.scene.brush_index
+            brush_index = bpy.context.scene.brush_index
             #mn = bpy.context.scene.custom_index
             
             move_x = event.mouse_region_x - self.last_mouse_x
@@ -254,7 +254,7 @@ class material_paint(bpy.types.Operator):
                     angsin = move_y / move_length
                     angle = math.atan2(angsin, angcos)
                     if(angle < 0):
-                           angle = 3.1415927410125732 + (angle * -1)
+                           angle = math.pi - angle
                     bpy.context.tool_settings.image_paint.brush.texture_slot.angle = angle 
                 
                     #self.offset = angcos, angle
@@ -264,13 +264,13 @@ class material_paint(bpy.types.Operator):
                 #bpy.context.tool_settings.image_paint.brush.texture_slot.offset[1] -= move_y
                 #event.mouse_region_x / bpy.context.region.width
                 for i in range(18):
-                    chk_brush = bpy.data.materials[bn].texture_paint_slots[i]           # brush slot
-                    chk_mat = bpy.context.object.active_material.texture_paint_slots[i]
-                    if(chk_brush != None):
-                        bs = bpy.data.materials[bn].texture_paint_slots[i].name
-                        bts = bpy.data.textures[bs]                                 # brush texture slot
-                        bpy.context.tool_settings.image_paint.brush.texture = bts
-                        if(chk_mat != None):
+                    check_brush = bpy.data.materials[brush_index].texture_paint_slots[i]           # brush slot
+                    check_material = bpy.context.object.active_material.texture_paint_slots[i]
+                    if(check_brush != None):
+                        brush_slot = bpy.data.materials[brush_index].texture_paint_slots[i].name
+                        brush_texture_slot = bpy.data.textures[brush_slot]                                 # brush texture slot
+                        bpy.context.tool_settings.image_paint.brush.texture = brush_texture_slot
+                        if(check_material != None):
                             bpy.context.object.active_material.paint_active_slot = i                    
                             bpy.ops.paint.image_paint(stroke=stroke)
                         
@@ -320,7 +320,7 @@ class material_paint(bpy.types.Operator):
             stroke.append( self.fill_brush_stroke( x, y ) )
             stroke[0]["is_start"] = True
             
-            bn = bpy.context.scene.brush_index
+            brush_index = bpy.context.scene.brush_index
             #mn = bpy.context.scene.custom_index
             
             if (self.lastmapmode == 'RANDOM'):
@@ -351,18 +351,23 @@ class material_paint(bpy.types.Operator):
                     #angsin = move_y / move_length
                     #angle = math.atan2(angsin, angcos)
                     bpy.context.tool_settings.image_paint.brush.texture_slot.angle = 0
+
                     
+            #-----------------------------------#
+            #TODO: replace this part with the new node texture system    
+            
             #bpy.context.tool_settings.image_paint.brush.texture_slot.offset[1] -= move_y
-            for i in range(18):
-                chk_brush = bpy.data.materials[bn].texture_paint_slots[i]           # brush slot
-                chk_mat = bpy.context.object.active_material.texture_paint_slots[i]
-                if(chk_brush != None):
-                    bs = bpy.data.materials[bn].texture_paint_slots[i].name
-                    bts = bpy.data.textures[bs]                                 # brush texture slot
-                    bpy.context.tool_settings.image_paint.brush.texture = bts
-                    if(chk_mat != None):
+            for i in range(len(bpy.data.materials[brush_index].texture_paint_slots)):
+                check_brush = bpy.data.materials[brush_index].texture_paint_slots[i]           # brush slot
+                check_material = bpy.context.object.active_material.texture_paint_slots[i]
+                if(check_brush != None):
+                    brush_slot = bpy.data.materials[brush_index].texture_paint_slots[i].name
+                    brush_texture_slot = bpy.data.textures[brush_slot]                                 # brush texture slot
+                    bpy.context.tool_settings.image_paint.brush.texture = brush_texture_slot
+                    if(check_material != None):
                         bpy.context.object.active_material.paint_active_slot = i                    
                         bpy.ops.paint.image_paint(stroke=stroke)
+            #-----------------------------------#    
             
             self.time = 0
             
@@ -375,8 +380,8 @@ class material_paint(bpy.types.Operator):
         return {'RUNNING_MODAL'}
     
 # main definition
-def main(context,bn):
-    #bn is the index of the texture in the brush material list
+def main(context,brush_index):
+    #brush_index is the index of the texture in the brush material list
     ob = context.active_object
     
     def invoke(self, context, event):
@@ -388,7 +393,7 @@ def main(context,bn):
 # -------------------------------------------------------------------
 classes = (
     Uilist_actions,
-    UL_brushitems,
+    PBRB_UL_brushitems,
     UIListMaterial,
     CustomProp,
     material_paint,    
