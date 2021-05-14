@@ -78,23 +78,23 @@ class Uilist_actions(bpy.types.Operator):
                 scn.brush_index = 0
         
         elif self.action == 'SAVE':
-            #Save temporal image by texture_slots in active object
+            #Save temporal image by texture_paint_slots in active object
             for i in range(18):
-                chkslot = bpy.context.active_object.active_material.texture_slots[i]
+                chkslot = bpy.context.active_object.active_material.texture_paint_slots[i]
                 if(chkslot != None):
-                    tempimage = bpy.data.images.find(bpy.context.active_object.active_material.texture_slots[i].texture.image.name)
+                    tempimage = bpy.data.images.find(bpy.context.active_object.active_material.texture_paint_slots[i].texture.image.name)
                     bpy.data.images[tempimage].save()
                     #chkslot.texture.image.save()
             
             #pass
         
         elif self.action == 'LOAD':
-            #reload saved temporal images to texture_slots in active object
+            #reload saved temporal images to texture_paint_slots in active object
             #make sure we did not change last active object.
             for i in range(18):
-                chkslot = bpy.context.active_object.active_material.texture_slots[i]
+                chkslot = bpy.context.active_object.active_material.texture_paint_slots[i]
                 if(chkslot != None):
-                    tempimage = bpy.data.images.find(bpy.context.active_object.active_material.texture_slots[i].texture.image.name)
+                    tempimage = bpy.data.images.find(bpy.context.active_object.active_material.texture_paint_slots[i].texture.image.name)
                     bpy.data.images[tempimage].reload()
                     
             for area in bpy.context.screen.areas:
@@ -230,12 +230,12 @@ class material_paint(bpy.types.Operator):
             
             if (move_length >= brush_spacing):              #bpy.context.tool_settings.image_paint.brush.spacing
                 if (self.lastmapmode == 'RANDOM'):
-                    bpy.context.tool_settings.image_paint.brush.texture_slot.tex_paint_map_mode = 'TILED'
+                    bpy.context.tool_settings.image_paint.brush.texture_slot.map_mode = 'TILED'
                     bpy.context.tool_settings.image_paint.brush.texture_slot.offset[0] = random.uniform(-2.0, 2.0)
                     bpy.context.tool_settings.image_paint.brush.texture_slot.offset[1] = random.uniform(-2.0, 2.0)
                     
                 elif (self.lastmapmode == 'VIEW_PLANE'):
-                    # tex_paint_map_mode = 'View Plane'
+                    # map_mode = 'View Plane'
                     offset_x = event.mouse_region_x - (bpy.context.region.width/2)
                     offset_x = offset_x / stroke[0]["size"]
                     bpy.context.tool_settings.image_paint.brush.texture_slot.offset[0] = offset_x * -1
@@ -264,10 +264,10 @@ class material_paint(bpy.types.Operator):
                 #bpy.context.tool_settings.image_paint.brush.texture_slot.offset[1] -= move_y
                 #event.mouse_region_x / bpy.context.region.width
                 for i in range(18):
-                    chk_brush = bpy.data.materials[bn].texture_slots[i]           # brush slot
-                    chk_mat = bpy.context.object.active_material.texture_slots[i]
+                    chk_brush = bpy.data.materials[bn].texture_paint_slots[i]           # brush slot
+                    chk_mat = bpy.context.object.active_material.texture_paint_slots[i]
                     if(chk_brush != None):
-                        bs = bpy.data.materials[bn].texture_slots[i].name
+                        bs = bpy.data.materials[bn].texture_paint_slots[i].name
                         bts = bpy.data.textures[bs]                                 # brush texture slot
                         bpy.context.tool_settings.image_paint.brush.texture = bts
                         if(chk_mat != None):
@@ -284,7 +284,7 @@ class material_paint(bpy.types.Operator):
        
         elif event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
             bpy.context.tool_settings.image_paint.brush.texture_slot.angle = self.lastangle
-            bpy.context.tool_settings.image_paint.brush.texture_slot.tex_paint_map_mode = self.lastmapmode
+            bpy.context.tool_settings.image_paint.brush.texture_slot.map_mode = self.lastmapmode
             bpy.context.tool_settings.image_paint.brush.texture = self.lastBrush
             bpy.context.object.active_material.paint_active_slot = self.lastSlot
             bpy.context.tool_settings.image_paint.brush.texture_slot.offset[0]=0
@@ -300,7 +300,7 @@ class material_paint(bpy.types.Operator):
             self.last_mouse_y = event.mouse_region_y
             
             self.lastangle = bpy.context.tool_settings.image_paint.brush.texture_slot.angle
-            self.lastmapmode = bpy.context.tool_settings.image_paint.brush.texture_slot.tex_paint_map_mode
+            self.lastmapmode = bpy.context.tool_settings.image_paint.brush.texture_slot.map_mode
             self.lastBrush = bpy.context.tool_settings.image_paint.brush.texture
             self.lastSlot = bpy.context.object.active_material.paint_active_slot
             ###  
@@ -324,13 +324,13 @@ class material_paint(bpy.types.Operator):
             #mn = bpy.context.scene.custom_index
             
             if (self.lastmapmode == 'RANDOM'):
-                bpy.context.tool_settings.image_paint.brush.texture_slot.tex_paint_map_mode = 'TILED'
+                bpy.context.tool_settings.image_paint.brush.texture_slot.map_mode = 'TILED'
                 bpy.context.tool_settings.image_paint.brush.texture_slot.offset[0] = random.uniform(-2.0, 2.0)
                 bpy.context.tool_settings.image_paint.brush.texture_slot.offset[1] = random.uniform(-2.0, 2.0)
             
             elif (self.lastmapmode == 'VIEW_PLANE'):
-                bpy.context.tool_settings.image_paint.brush.texture_slot.tex_paint_map_mode = 'TILED'
-                # tex_paint_map_mode = 'View Plane'
+                bpy.context.tool_settings.image_paint.brush.texture_slot.map_mode = 'TILED'
+                # map_mode = 'View Plane'
                 offset_x = event.mouse_region_x - (bpy.context.region.width/2)
                 offset_x = offset_x / stroke[0]["size"]
                 bpy.context.tool_settings.image_paint.brush.texture_slot.offset[0] = offset_x * -1            
@@ -354,10 +354,10 @@ class material_paint(bpy.types.Operator):
                     
             #bpy.context.tool_settings.image_paint.brush.texture_slot.offset[1] -= move_y
             for i in range(18):
-                chk_brush = bpy.data.materials[bn].texture_slots[i]           # brush slot
-                chk_mat = bpy.context.object.active_material.texture_slots[i]
+                chk_brush = bpy.data.materials[bn].texture_paint_slots[i]           # brush slot
+                chk_mat = bpy.context.object.active_material.texture_paint_slots[i]
                 if(chk_brush != None):
-                    bs = bpy.data.materials[bn].texture_slots[i].name
+                    bs = bpy.data.materials[bn].texture_paint_slots[i].name
                     bts = bpy.data.textures[bs]                                 # brush texture slot
                     bpy.context.tool_settings.image_paint.brush.texture = bts
                     if(chk_mat != None):
