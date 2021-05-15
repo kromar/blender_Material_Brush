@@ -229,15 +229,14 @@ class material_paint(bpy.types.Operator):
         ## TODO: replace this part with the new node texture system 
         #bpy.context.tool_settings.image_paint.brush.texture_slot.offset[1] -= move_y
         
-        
-        paint_slots = len(bpy.data.materials[brush_id].texture_paint_slots)
-        print("INDEX: ", bpy.data.materials[brush_id].name, bpy.context.object.active_material.name)
-        for i in range(paint_slots):
+        print("check_brush: ", bpy.data.materials[brush_id].name, "\ncheck_material: ", bpy.context.object.active_material.name)
+        print(len(bpy.data.materials[brush_id].texture_paint_slots))
+        for i in range(len(bpy.data.materials[brush_id].texture_paint_slots)):
 
             check_brush = bpy.data.materials[brush_id].texture_paint_slots[i]           # brush slot
             check_material = bpy.context.object.active_material.texture_paint_slots[i]
                 
-            #print("INDEX:", i, check_brush, check_material)
+            print("INDEX:", i, check_brush, check_material)
             """  
             if(check_brush != None):
                 brush_slot = bpy.data.materials[brush_id].texture_paint_slots[i].name
@@ -260,17 +259,17 @@ class material_paint(bpy.types.Operator):
                     bpy.ops.paint.image_paint(stroke=stroke)  """
 
 
-        """ for mat in bpy.data.materials:
-            material = bpy.data.materials[mat.name]
-            if material.use_nodes:
-                print("\n\nmaterial:", mat.name, "using nodes")
-                for node in material.node_tree.nodes:	
-                    print("node type: ", node.type)                                
-                    if node.type == 'TEX_IMAGE' and node.image:
-                        print("image: ", node.image.name, node.image)	
-                    elif node.type == 'GROUP':
-                        print("group found")
-            print("\n") """
+            """ for mat in bpy.data.materials:
+                material = bpy.data.materials[mat.name]
+                if material.use_nodes:
+                    print("\n\nmaterial:", mat.name, "using nodes")
+                    for node in material.node_tree.nodes:	
+                        print("node type: ", node.type)                                
+                        if node.type == 'TEX_IMAGE' and node.image:
+                            print("image: ", node.image.name, node.image)	
+                        elif node.type == 'GROUP':
+                            print("group found")
+                print("\n") """
 
 
     @classmethod
