@@ -19,10 +19,12 @@ from bpy.utils import register_class, unregister_class
 from bpy.props import IntProperty, StringProperty, CollectionProperty, EnumProperty
 from bpy.types import Panel, UIList, Operator, PropertyGroup
 
-def profiler(start_time=0, string=None): 
+def profiler(start_time=None, string=None): 
+    if not start_time:
+        start_time = time.time()
     elapsed = time.time()
-    print("{:.6f}".format((elapsed-start_time)*1000), "ms << ", string)  
-    #start_time = time.time()
+    print("{:.6f}".format((elapsed - start_time) * 1000), "ms << ", string)  
+    
     return start_time  
 
 
@@ -78,7 +80,7 @@ class Uilist_actions(Operator):
             for i in range(len(bpy.data.materials[brush_id].texture_paint_slots)):
                 chkslot = context.active_object.active_material.texture_paint_slots[i]
                 if(chkslot != None):
-                    tempimage = bpy.data.images.find(context.active_object.active_material.texture_paint_slots[i].texture.image.name)
+                    tempimage = bpy.context.object.active_material.texture_paint_images[i].name
                     bpy.data.images[tempimage].save()
                     #chkslot.texture.image.save()            
                     self.report({'INFO'}, "Saved Images")
@@ -90,7 +92,8 @@ class Uilist_actions(Operator):
             for i in range(len(bpy.data.materials[brush_id].texture_paint_slots)):
                 chkslot = context.active_object.active_material.texture_paint_slots[i]
                 if(chkslot != None):
-                    tempimage = bpy.data.images.find(context.active_object.active_material.texture_paint_slots[i].texture.image.name)
+                    tempimage = bpy.context.object.active_material.texture_paint_images[i].name
+                    #tempimage = bpy.data.images.find(context.active_object.active_material.texture_paint_slots[i].texture.image.name)
                     bpy.data.images[tempimage].reload() 
                     #bpy.ops.image.reload()
                     self.report({'INFO'}, "Reloaded Images")
@@ -254,8 +257,8 @@ class material_paint(Operator):
         ## TODO: replace this part with the new node texture system 
         #bpy.context.tool_settings.image_paint.brush.texture_slot.offset[1] -= move_y
 
-        #print("\n\nBrush: ", bpy.data.materials[brush_id].name, "\nmaterial: ", bpy.context.object.active_material.name)
-        #print(len(bpy.data.materials[brush_id].texture_paint_slots))
+        print("\n\nBrush: ", bpy.data.materials[brush_id].name, "\nmaterial: ", bpy.context.object.active_material.name)
+        print(len(bpy.data.materials[brush_id].texture_paint_slots))
         if bpy.context.object.active_material.use_nodes and bpy.data.materials[brush_id].use_nodes:            
             #start_time = profiler(start_time, "paint brush 0")
             for i in range(len(bpy.data.materials[brush_id].texture_paint_slots)):
@@ -266,7 +269,7 @@ class material_paint(Operator):
                 if(bpy.data.materials[brush_id].texture_paint_slots[i] != None):
                     image = bpy.data.materials[brush_id].texture_paint_images[i]                    
                     brush_slot = image.name
-                    #print(brush_slot)
+                    print(brush_slot)
                     #create textures if they do not exists, they are required for painting
                     if image.name not in bpy.data.textures:
                         texture = bpy.data.textures.new(image.name, 'IMAGE')
@@ -277,7 +280,7 @@ class material_paint(Operator):
                     
                     # paint if active material contains texture slots
                     if(bpy.context.object.active_material.texture_paint_slots[i] != None):                    
-                        #print(bpy.context.object.active_material.texture_paint_images[i].name, "\n")
+                        print(bpy.context.object.active_material.texture_paint_images[i].name, "\n")
                         bpy.context.object.active_material.paint_active_slot = i    
                         #print(brush_stroke, "\n\n")      
                         #start_time = profiler(start_time, "paint brush 3")        
