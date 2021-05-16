@@ -1,5 +1,5 @@
 
-# blender_PBR_Brush
+# blender Material Brush
 multilayer paint brush
 
 [Installation Instructions.pdf](https://github.com/kromar/blender_PBR_Brush/files/6471806/Installation.Instructions.pdf)
