@@ -234,18 +234,23 @@ class material_paint(Operator):
         
         return stroke
             
-
+       
     def material_nodes(self, material):
+        
+        texture_type=['BASE_COLOR', 'SPECULAR', 'ROUGHNESS', 'METALLIC', 'NORMAL', 'BUMP', 'DISPLACEMENT']
         if material.use_nodes:
-            #print("\n\nMaterial:", material.name)            
-            for node in material.node_tree.nodes:                
-                print("node type: ", node.type) 
-                if node.type == 'TEX_IMAGE' and node.image:
-                    print("image: ", node.image.name) #, node.image)	
-                    texture  = bpy.data.images[node.image.name]    #get the texture
-                    return texture 
-                elif node.type == 'GROUP':
-                    print("group found")
+            def followLinks(mat_node):
+                for n_inputs in mat_node.inputs:
+                    for node_links in n_inputs.links:
+                        print("TAG: ", n_inputs.name)
+                        print("going to " + node_links.from_node.name)
+                        followLinks(node_links.from_node)
+
+            for mat_node in material.node_tree.nodes:
+                if mat_node.type == 'OUTPUT_MATERIAL':
+                    # we start at the material output node
+                    print("\nStarting at " + mat_node.name)
+                    followLinks(mat_node)            
                     
         else:
             self.report({'WARNING'}, 'Material Node disabled') 
@@ -271,6 +276,9 @@ class material_paint(Operator):
                     brush_slot = image.name
                     print(brush_slot)
                     #create textures if they do not exists, they are required for painting
+                   
+
+
                     if image.name not in bpy.data.textures:
                         texture = bpy.data.textures.new(image.name, 'IMAGE')
                         bpy.data.textures[texture.name].image = image
@@ -278,6 +286,7 @@ class material_paint(Operator):
                     brush_texture_slot = bpy.data.textures[brush_slot]        
                     bpy.context.tool_settings.image_paint.brush.texture = brush_texture_slot
                     
+
                     # paint if active material contains texture slots
                     if(bpy.context.object.active_material.texture_paint_slots[i] != None):                    
                         print(bpy.context.object.active_material.texture_paint_images[i].name, "\n")
