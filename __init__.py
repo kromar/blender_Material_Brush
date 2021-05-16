@@ -148,8 +148,8 @@ class UIListMaterial(Panel):
         row.label(text="Alt+Left Mouse Button to paint")
         #layout.label(text="Save Painted Material")
         row = layout.row(align=True)
-        row.operator("listbrushmats.list_action", text = "Save Textures").action = 'SAVE'
-        row.operator("listbrushmats.list_action", text = "Reload Textures").action = 'LOAD'
+        row.operator("listbrushmats.list_action", text = "Save").action = 'SAVE'
+        row.operator("listbrushmats.list_action", text = "Discard").action = 'LOAD'
                 
         #set the texfaces using this material.
         brush_id = context.scene.brush_index      #brush iNdex    
