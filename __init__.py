@@ -22,7 +22,7 @@ from bpy.types import Panel, UIList, Operator, PropertyGroup
 def profiler(start_time=0, string=None): 
     elapsed = time.time()
     print("{:.6f}".format((elapsed-start_time)*1000), "ms << ", string)  
-    start_time = time.time()
+    #start_time = time.time()
     return start_time  
 
 
@@ -92,6 +92,7 @@ class Uilist_actions(Operator):
                 if(chkslot != None):
                     tempimage = bpy.data.images.find(context.active_object.active_material.texture_paint_slots[i].texture.image.name)
                     bpy.data.images[tempimage].reload() 
+                    #bpy.ops.image.reload()
                     self.report({'INFO'}, "Reloaded Images")
                     
             for area in context.screen.areas:
@@ -159,7 +160,7 @@ class CustomProp(PropertyGroup):
     test: IntProperty()
     #temp_images = []
     
-start_time = None
+#start_time = None
 class material_paint(Operator):
     '''Paint material layers'''
     bl_idname = "paint.material_paint"
@@ -246,29 +247,26 @@ class material_paint(Operator):
         else:
             self.report({'WARNING'}, 'Material Node disabled') 
 
-
+   
     def paint_strokes(self, brush_id, stroke):
-        
-        print("\n")
-        start_time = profiler(time.time(), "Start paint Profiling")
+        #start_time = profiler(time.time(), "Start paint Profiling")
 
         ## TODO: replace this part with the new node texture system 
         #bpy.context.tool_settings.image_paint.brush.texture_slot.offset[1] -= move_y
 
         #print("\n\nBrush: ", bpy.data.materials[brush_id].name, "\nmaterial: ", bpy.context.object.active_material.name)
         #print(len(bpy.data.materials[brush_id].texture_paint_slots))
-        if bpy.context.object.active_material.use_nodes and bpy.data.materials[brush_id].use_nodes:
+        if bpy.context.object.active_material.use_nodes and bpy.data.materials[brush_id].use_nodes:            
+            #start_time = profiler(start_time, "paint brush 0")
             for i in range(len(bpy.data.materials[brush_id].texture_paint_slots)):
                 
-                start_time = profiler(start_time, "paint brush")
+                #start_time = profiler(start_time, "paint brush 1")
                 # check if brush material contains texture paint slots 
                 # #(image texture nodes are considered texture paint slots)
                 if(bpy.data.materials[brush_id].texture_paint_slots[i] != None):
                     image = bpy.data.materials[brush_id].texture_paint_images[i]                    
                     brush_slot = image.name
                     #print(brush_slot)
-                    
-                    start_time = profiler(start_time, "paint brush")
                     #create textures if they do not exists, they are required for painting
                     if image.name not in bpy.data.textures:
                         texture = bpy.data.textures.new(image.name, 'IMAGE')
@@ -277,15 +275,15 @@ class material_paint(Operator):
                     brush_texture_slot = bpy.data.textures[brush_slot]        
                     bpy.context.tool_settings.image_paint.brush.texture = brush_texture_slot
                     
-                    start_time = profiler(start_time, "paint brush")
                     # paint if active material contains texture slots
                     if(bpy.context.object.active_material.texture_paint_slots[i] != None):                    
                         #print(bpy.context.object.active_material.texture_paint_images[i].name, "\n")
                         bpy.context.object.active_material.paint_active_slot = i    
-                        #print(brush_stroke, "\n\n")              
+                        #print(brush_stroke, "\n\n")      
+                        #start_time = profiler(start_time, "paint brush 3")        
                         bpy.ops.paint.image_paint(stroke=stroke) 
                         
-            start_time = profiler(start_time, "paint brush")
+            #start_time = profiler(start_time, "paint brush 4")
             
         else:
             self.report({'WARNING'}, 'Material Node disabled')
@@ -298,10 +296,9 @@ class material_paint(Operator):
    
     def modal(self, context, event): 
         #print(event.pressure)
-        start_time = profiler(time.time(), "Start modal Profiling")
 
-        if event.type in {'MOUSEMOVE'}:             
-            print("modal")
+        if event.type in {'MOUSEMOVE'}:    
+            #start_time = profiler(time.time(), "Start modal Profiling")  
             #""" 
             stroke  = self.collect_strokes(context, event)
             brush_id = context.scene.brush_index
@@ -310,12 +307,12 @@ class material_paint(Operator):
             move_length = math.sqrt(move_x * move_x + move_y * move_y)            
             brush_spacing = stroke[0]["size"] * 2 * (context.tool_settings.image_paint.brush.spacing / 100) #40
             
-            start_time = profiler(start_time, "modal profile")
+            #start_time = profiler(start_time, "modal profile 1")
 
             if (move_length >= brush_spacing):      #context.tool_settings.image_paint.brush.spacing
                 self.stroke_mode(event, stroke)
                 
-                start_time = profiler(start_time, "modal profile")
+                #start_time = profiler(start_time, "modal profile 2")
 
                 if(context.tool_settings.image_paint.brush.texture_slot.use_random == True):
                     randomangle = context.tool_settings.image_paint.brush.texture_slot.random_angle
@@ -335,16 +332,16 @@ class material_paint(Operator):
                 #context.tool_settings.image_paint.brush.texture_slot.offset[1] -= move_y
                 #event.mouse_region_x / context.region.width
                 
-                start_time = profiler(start_time, "modal profile")
+                #start_time = profiler(start_time, "modal profile 3")
                 self.paint_strokes(brush_id, stroke)                   
-                start_time = profiler(start_time, "modal profile")                     
+                #start_time = profiler(start_time, "modal profile 4")                     
                 self.last_mouse_x = event.mouse_region_x
                 self.last_mouse_y = event.mouse_region_y
             self.time = 0            
             self.stroke.clear() 
             #"""
             
-            start_time = profiler(start_time, "modal profile")
+            #start_time = profiler(start_time, "modal profile 5")
        
         elif event.value in {'RELEASE'} or event.type in {'ESC'}:
             context.tool_settings.image_paint.brush.texture_slot.angle = self.lastangle
@@ -361,7 +358,7 @@ class material_paint(Operator):
 
             
     def invoke(self, context, event):
-        start_time = profiler(time.time(), "Start invoke Profiling")
+        #start_time = profiler(time.time(), "Start invoke Profiling")
         if event.type in {'LEFTMOUSE'}:
             self.last_mouse_x = event.mouse_region_x
             self.last_mouse_y = event.mouse_region_y            
@@ -370,13 +367,13 @@ class material_paint(Operator):
             self.lastBrush = context.tool_settings.image_paint.brush.texture
             self.lastSlot = context.object.active_material.paint_active_slot 
             
-            start_time = profiler(start_time, "invoke profile")      
+            #start_time = profiler(start_time, "invoke profile 1")      
             stroke  = self.collect_strokes(context, event)            
-            start_time = profiler(start_time, "invoke profile")
+            #start_time = profiler(start_time, "invoke profile 2")
 
             brush_id = context.scene.brush_index            
             self.stroke_mode(event, stroke)      
-            start_time = profiler(start_time, "invoke profile")
+            #start_time = profiler(start_time, "invoke profile 3")
 
             if(context.tool_settings.image_paint.brush.texture_slot.use_random == True):
                 randomangle = context.tool_settings.image_paint.brush.texture_slot.random_angle
@@ -389,13 +386,12 @@ class material_paint(Operator):
                     context.tool_settings.image_paint.brush.texture_slot.angle = 0
                            
             self.paint_strokes(brush_id, stroke)      
-            start_time = profiler(start_time, "invoke profile")
+            #start_time = profiler(start_time, "invoke profile 4")
             self.time = 0            
             self.stroke.clear()
-            print("invoke")
             context.window_manager.modal_handler_add(self)
         
-        start_time = profiler(start_time, "invoke profile")
+        #start_time = profiler(start_time, "total draw profile")
         return {'RUNNING_MODAL'}
     
 
