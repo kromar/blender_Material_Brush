@@ -77,7 +77,7 @@ class Uilist_actions(Operator):
         
         elif self.action == 'SAVE':
             #Save temporal image by texture_paint_slots in active object
-            for i in range(len(bpy.data.materials[brush_id].texture_paint_slots)):
+            for i in range(len(bpy.context.object.active_material.texture_paint_slots)):
                 chkslot = context.active_object.active_material.texture_paint_slots[i]
                 if(chkslot != None):
                     tempimage = bpy.context.object.active_material.texture_paint_images[i].name
@@ -89,7 +89,7 @@ class Uilist_actions(Operator):
         elif self.action == 'LOAD':
             #reload saved temporal images to texture_paint_slots in active object
             #make sure we did not change last active object.
-            for i in range(len(bpy.data.materials[brush_id].texture_paint_slots)):
+            for i in range(len(bpy.context.object.active_material.texture_paint_slots)):
                 chkslot = context.active_object.active_material.texture_paint_slots[i]
                 if(chkslot != None):
                     tempimage = bpy.context.object.active_material.texture_paint_images[i].name
@@ -108,7 +108,7 @@ class Uilist_actions(Operator):
 
 
 # custom list
-class PBRB_UL_brushitems(UIList):    
+class MP_UL_brushitems(UIList):    
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if item.name == context.active_object.active_material.name:            
             layout.prop(item, "name", text="", emboss=False, translate=False, icon='NODE_MATERIAL')
@@ -140,9 +140,9 @@ class UIListMaterial(Panel):
         row.label(text="Select Brush")
         col = row.column(align=True)
         col.operator("listbrushmats.list_action", icon='FILE_REFRESH', text="Update List").action = 'UPDATE'
-        
+                
         row = layout.row()
-        row.template_list("PBRB_UL_brushitems", "", scene, "listbrushmats", scene, "brush_index", rows=rows)  
+        row.template_list("MP_UL_brushitems", "", scene, "listbrushmats", scene, "brush_index", rows=rows)  
 
         row = layout.row()
         row.label(text="Alt+Left Mouse Button to paint")
@@ -171,6 +171,7 @@ class material_paint(Operator):
     bl_options = {'REGISTER', 'UNDO'}
     time = 0
     stroke = []
+    texture_slot_matrix = []
 
     def fill_brush_stroke(self, x, y):       
         brushstroke = {
@@ -236,22 +237,12 @@ class material_paint(Operator):
             
            
     def node_finder(self, material):
-        texture_maps = {
-                'Base Color':'',
-                'Roughness':'',
-                'Base Color':'',
-                'NORMAL':'',
-                'BUMP':'',
-                'DISPLACEMENT':'',
-                }
+        
+        start_time = profiler(time.time(), "Start paint Profiling")
+        texture_maps = {}
 
-        for mat_node in material.node_tree.nodes:
-            if mat_node.type == 'OUTPUT_MATERIAL':
-                # we start at the material output node
-                print("\nStarting at: ",  mat_node.name)
-                self.follow_node_Links(mat_node)
 
-        def follow_node_Links(mat_node):
+        def follow_node_links(mat_node):
             for node_input in mat_node.inputs:
                 for node_link in node_input.links:   
                     # when image is found identify the type
@@ -260,11 +251,12 @@ class material_paint(Operator):
                         # Direct texture to BSDF_PRINCIPLED node connection 
                         #('Base Color', 'Roughness', 
                         if node_link.to_node.bl_static_type == 'BSDF_PRINCIPLED':
-                            print(node_input.name, node_link.from_node.image.name) 
-                            
+                            #print(node_input.name, node_link.from_node.image.name) 
+                            texture_maps[node_input.name] = node_link.from_node.image.name
                         # indirect connection (NORMAL, BUMP, DISPLACEMENT) 
                         else:                    
-                            print(node_link.to_node.bl_static_type, node_link.from_node.image.name)
+                            #print(node_link.to_node.bl_static_type, node_link.from_node.image.name)
+                            texture_maps[node_link.to_node.bl_static_type] = node_link.from_node.image.name
                             
                         
                         #print('image name: ', node_link.from_node.image.name) 
@@ -279,8 +271,52 @@ class material_paint(Operator):
                         #print("going to node: ", node_link.to_node.bl_idname)                            
                         
                     # keep going down the rabit hole to find all those textures
-                    follow_node_Links(node_link.from_node)   
+                    follow_node_links(node_link.from_node)   
+                    
 
+        for mat_node in material.node_tree.nodes:
+            if mat_node.type == 'OUTPUT_MATERIAL':
+                # we start at the material output node
+                #print("\nStarting at: ",  mat_node.name)
+                follow_node_links(mat_node)
+
+        start_time = profiler(start_time, "node finder")
+        return texture_maps
+
+    def create_texture_slot_matrix(self):
+        brush_id = bpy.context.scene.brush_index   
+        material_maps = self.node_finder(bpy.context.object.active_material)   
+        brush_maps = self.node_finder(bpy.data.materials[brush_id])
+
+        # function to return key for any value
+        def get_dict_key(dict, val):
+            for key, value in dict.items():
+                if val == value:
+                    return key 
+            return "key doesn't exist"
+
+        texture_slot_matrix = []
+        for i in range(len(bpy.data.materials[brush_id].texture_paint_slots)):
+        #for i in range(len(bpy.context.object.active_material.texture_paint_slots)):
+            #print("\ni: ", i)
+            bs = bpy.data.materials[brush_id].texture_paint_images[i].name
+            ms = bpy.context.object.active_material.texture_paint_images[i]
+            
+            #print("brush texture: ", bs)
+            
+            bs_type = get_dict_key(brush_maps, bs)
+            ms_texture = material_maps[bs_type]
+            #print("Brush type", bs_type)
+            #print("Material texture", ms_texture, '\n')
+            
+            #now get the index of that texture 
+            for m in range(len(bpy.context.object.active_material.texture_paint_slots)):
+                if ms_texture in bpy.context.object.active_material.texture_paint_images[m].name:
+                    #print(m, ms_texture)
+                    texture_slot_matrix.append(m)                    
+                    
+        #print(texture_slot_matrix)
+        return texture_slot_matrix
 
    
     def paint_strokes(self, brush_id, stroke):
@@ -289,22 +325,22 @@ class material_paint(Operator):
         ## TODO: replace this part with the new node texture system 
         #bpy.context.tool_settings.image_paint.brush.texture_slot.offset[1] -= move_y
 
-        print("\n\nBrush: ", bpy.data.materials[brush_id].name, "\nmaterial: ", bpy.context.object.active_material.name)
-        print(len(bpy.data.materials[brush_id].texture_paint_slots))
-        if bpy.context.object.active_material.use_nodes and bpy.data.materials[brush_id].use_nodes:            
+        #print("\n\nBrush: ", bpy.data.materials[brush_id].name, "\nmaterial: ", bpy.context.object.active_material.name)
+        #print(len(bpy.data.materials[brush_id].texture_paint_slots))
+        if bpy.context.object.active_material.use_nodes and bpy.data.materials[brush_id].use_nodes:   
+                
             #start_time = profiler(start_time, "paint brush 0")
             for i in range(len(bpy.data.materials[brush_id].texture_paint_slots)):
+            #for i in range(len(bpy.context.object.active_material.texture_paint_slots)):                
                 
                 #start_time = profiler(start_time, "paint brush 1")
                 # check if brush material contains texture paint slots 
                 # #(image texture nodes are considered texture paint slots)
-                if(bpy.data.materials[brush_id].texture_paint_slots[i] != None):
+                if bpy.data.materials[brush_id].texture_paint_slots[i]:
                     image = bpy.data.materials[brush_id].texture_paint_images[i]                    
                     brush_slot = image.name
-                    print(brush_slot)
+                    #print("brush slots: ", brush_slot)
                     #create textures if they do not exists, they are required for painting
-                   
-
 
                     if image.name not in bpy.data.textures:
                         texture = bpy.data.textures.new(image.name, 'IMAGE')
@@ -312,12 +348,12 @@ class material_paint(Operator):
                     # this is the brush texture slot used for painting
                     brush_texture_slot = bpy.data.textures[brush_slot]        
                     bpy.context.tool_settings.image_paint.brush.texture = brush_texture_slot
-                    
 
                     # paint if active material contains texture slots
-                    if(bpy.context.object.active_material.texture_paint_slots[i] != None):                    
-                        print(bpy.context.object.active_material.texture_paint_images[i].name, "\n")
-                        bpy.context.object.active_material.paint_active_slot = i    
+                    m = self.texture_slot_matrix[i]
+                    if bpy.context.object.active_material.texture_paint_slots[m]:
+                        #print("mats slot: ", bpy.context.object.active_material.texture_paint_images[m].name, "\n")
+                        bpy.context.object.active_material.paint_active_slot = m    
                         #print(brush_stroke, "\n\n")      
                         #start_time = profiler(start_time, "paint brush 3")        
                         bpy.ops.paint.image_paint(stroke=stroke) 
@@ -409,8 +445,7 @@ class material_paint(Operator):
             #start_time = profiler(start_time, "invoke profile 1")      
             stroke  = self.collect_strokes(context, event)            
             #start_time = profiler(start_time, "invoke profile 2")
-
-            brush_id = context.scene.brush_index            
+         
             self.stroke_mode(event, stroke)      
             #start_time = profiler(start_time, "invoke profile 3")
 
@@ -423,7 +458,16 @@ class material_paint(Operator):
                     #angsin = move_y / move_length
                     #angle = math.atan2(angsin, angcos)
                     context.tool_settings.image_paint.brush.texture_slot.angle = 0
-                           
+                     
+            brush_id = context.scene.brush_index   
+            """ material_maps = self.node_finder(bpy.context.object.active_material)   
+            brush_maps = self.node_finder(bpy.data.materials[brush_id])
+            print('material maps:\n', bpy.context.object.active_material.name, material_maps)  
+            print('brush maps:\n', bpy.data.materials[brush_id].name, brush_maps) """
+
+            
+            self.texture_slot_matrix = self.create_texture_slot_matrix()
+
             self.paint_strokes(brush_id, stroke)      
             #start_time = profiler(start_time, "invoke profile 4")
             self.time = 0            
@@ -445,7 +489,7 @@ def main(context, brush_id):
 
 classes = (
     Uilist_actions,
-    PBRB_UL_brushitems,
+    MP_UL_brushitems,
     UIListMaterial,
     CustomProp,
     material_paint,    
