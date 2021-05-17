@@ -234,26 +234,53 @@ class material_paint(Operator):
         
         return stroke
             
-       
-    def material_nodes(self, material):
-        
-        texture_type=['BASE_COLOR', 'SPECULAR', 'ROUGHNESS', 'METALLIC', 'NORMAL', 'BUMP', 'DISPLACEMENT']
-        if material.use_nodes:
-            def followLinks(mat_node):
-                for n_inputs in mat_node.inputs:
-                    for node_links in n_inputs.links:
-                        print("TAG: ", n_inputs.name)
-                        print("going to " + node_links.from_node.name)
-                        followLinks(node_links.from_node)
+           
+    def node_finder(self, material):
+        texture_maps = {
+                'Base Color':'',
+                'Roughness':'',
+                'Base Color':'',
+                'NORMAL':'',
+                'BUMP':'',
+                'DISPLACEMENT':'',
+                }
 
-            for mat_node in material.node_tree.nodes:
-                if mat_node.type == 'OUTPUT_MATERIAL':
-                    # we start at the material output node
-                    print("\nStarting at " + mat_node.name)
-                    followLinks(mat_node)            
-                    
-        else:
-            self.report({'WARNING'}, 'Material Node disabled') 
+        for mat_node in material.node_tree.nodes:
+            if mat_node.type == 'OUTPUT_MATERIAL':
+                # we start at the material output node
+                print("\nStarting at: ",  mat_node.name)
+                self.follow_node_Links(mat_node)
+
+        def follow_node_Links(mat_node):
+            for node_input in mat_node.inputs:
+                for node_link in node_input.links:   
+                    # when image is found identify the type
+                    if node_link.from_node.bl_static_type == 'TEX_IMAGE' and node_link.from_node.image:
+                                        
+                        # Direct texture to BSDF_PRINCIPLED node connection 
+                        #('Base Color', 'Roughness', 
+                        if node_link.to_node.bl_static_type == 'BSDF_PRINCIPLED':
+                            print(node_input.name, node_link.from_node.image.name) 
+                            
+                        # indirect connection (NORMAL, BUMP, DISPLACEMENT) 
+                        else:                    
+                            print(node_link.to_node.bl_static_type, node_link.from_node.image.name)
+                            
+                        
+                        #print('image name: ', node_link.from_node.image.name) 
+                        #print("node input: ", node_input.name)  
+                        #print("going to node: ", node_link.to_node.bl_static_type, '\n') 
+                        
+                        #print("going to node: ", node_link.is_valid)                    
+                        #print("going to node: ", node_link.from_node.name)
+                        #print("going to node: ", node_link.from_node.bl_idname)
+                        #print("going to node: ", node_link.from_node.bl_static_type)                 
+                        #print("going to node: ", node_link.to_node.name)               
+                        #print("going to node: ", node_link.to_node.bl_idname)                            
+                        
+                    # keep going down the rabit hole to find all those textures
+                    follow_node_Links(node_link.from_node)   
+
 
    
     def paint_strokes(self, brush_id, stroke):
