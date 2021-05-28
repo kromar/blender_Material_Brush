@@ -1,8 +1,8 @@
 bl_info = {
     'name': 'Material Brush',
     'author': 'Francisco Elizade, Daniel Grauer',
-    'version': (1, 0, 2),
-    'blender': (2, 92, 0),
+    'version': (1, 0, 3),
+    'blender': (2, 90, 0),
     'location': 'View3D - Texture Paint mode',
     'description': 'Paint all texture layers of materials simultaneously',
     'category': 'Image Paint',
@@ -173,20 +173,24 @@ class material_paint(Operator):
     stroke = []
     texture_slot_matrix = []
 
-    def fill_brush_stroke(self, x, y):       
+    def fill_brush_stroke(self, x, y):      
+            
         brushstroke = {
             "name": "defaultStroke",
             "pen_flip": False,
             "is_start": False,
             "location": (0,0,0),
             "mouse": (x, y),
-            "mouse_event": (0.0, 0.0),
             "pressure": 1,
             "size": bpy.context.tool_settings.unified_paint_settings.size,
-            "time": self.time,
-            "x_tilt": 0,
-            "y_tilt": 0
-            }               
+            "time": self.time
+            }
+
+        if bpy.app.version >= (2, 91, 0):  
+            brushstroke["mouse_event"] = 0.0, 0.0 
+            brushstroke["x_tilt"] = 0 
+            brushstroke["y_tilt"] = 0
+
         return brushstroke
     
 
