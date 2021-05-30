@@ -110,12 +110,13 @@ class Uilist_actions(Operator):
 # custom list
 class MP_UL_brushitems(UIList):    
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
-        if item.name == context.active_object.active_material.name:            
-            layout.prop(item, "name", text="", emboss=False, translate=False, icon='NODE_MATERIAL')
-        else:
-            layout.prop(item, "name", text="", emboss=False, translate=False, icon='BRUSH_TEXDRAW')
-        #split = layout.split(factor=0.7)
-        #split.label(text="Index: %d" % (index))
+        if context.active_object.active_material:
+            if item.name == context.active_object.active_material.name:            
+                layout.prop(item, "name", text="", emboss=False, translate=False, icon='NODE_MATERIAL')
+            else:
+                layout.prop(item, "name", text="", emboss=False, translate=False, icon='BRUSH_TEXDRAW')
+            #split = layout.split(factor=0.7)
+            #split.label(text="Index: %d" % (index))
 
     def invoke(self, context, event):
         pass
