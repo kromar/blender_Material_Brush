@@ -1,7 +1,7 @@
 bl_info = {
     'name': 'Material Brush',
     'author': 'Francisco Elizade, Daniel Grauer',
-    'version': (1, 0, 3),
+    'version': (1, 0, 4),
     'blender': (2, 90, 0),
     'location': 'View3D - Texture Paint mode',
     'description': 'Paint all texture layers of materials simultaneously',
@@ -65,8 +65,17 @@ class Uilist_actions(Operator):
             pass
                 
         if self.action == 'UPDATE':           
-            scene.listbrushmats.clear()                            
-            for i in range(len(bpy.data.materials)):
+            scene.listbrushmats.clear()    
+            last_material_index = bpy.context.active_object.active_material_index                            
+            for i in range(len(bpy.data.materials)):                                
+                try:
+                    bpy.context.active_object.material_slots[i].link = 'DATA'
+                except:
+                    bpy.ops.object.material_slot_add()                
+                bpy.context.active_object.material_slots[i].material = bpy.data.materials[i]
+                bpy.ops.object.material_slot_assign()     
+                bpy.context.active_object.active_material_index = last_material_index            
+                
                 if(bpy.data.materials[i]): # != context.active_object.active_material):
                     item = scene.listbrushmats.add()
                     item.id = len(scene.listbrushmats)
@@ -149,8 +158,8 @@ class UIListMaterial(Panel):
         row.label(text="Alt+Left Mouse Button to paint")
         #layout.label(text="Save Painted Material")
         row = layout.row(align=True)
-        row.operator("listbrushmats.list_action", text = "Save").action = 'SAVE'
-        row.operator("listbrushmats.list_action", text = "Discard").action = 'LOAD'
+        row.operator("listbrushmats.list_action", text = "Save Textures").action = 'SAVE'
+        row.operator("listbrushmats.list_action", text = "Discard Textures").action = 'LOAD'
                 
         #set the texfaces using this material.
         brush_id = context.scene.brush_index      #brush iNdex    
@@ -184,7 +193,10 @@ class material_paint(Operator):
             "mouse": (x, y),
             "pressure": 1,
             "size": bpy.context.tool_settings.unified_paint_settings.size,
-            "time": self.time
+            "time": self.time,
+            #"mouse_event": (0.0, 0.0),
+            #"x_tilt": 0,
+            #"y_tilt": 0,
             }
 
         if bpy.app.version >= (2, 91, 0):  
@@ -192,6 +204,7 @@ class material_paint(Operator):
             brushstroke["x_tilt"] = 0 
             brushstroke["y_tilt"] = 0
 
+            #print(brushstroke)
         return brushstroke
     
 
@@ -218,9 +231,12 @@ class material_paint(Operator):
     def collect_strokes(self, context, event):
         self.stroke = []    ## TODO: create new stroke list
         brushstroke = self.fill_brush_stroke(event.mouse_region_x, event.mouse_region_y) 
+
         brushstroke["is_start"] = True
         self.stroke.append(copy.deepcopy(brushstroke))
+
         brushstroke["is_start"] = False
+        
         self.stroke.append(brushstroke)
         args = (self, context)                
         x = self.stroke[0]["mouse"][0]
@@ -237,7 +253,7 @@ class material_paint(Operator):
         print("\nSTROKE 1: \n", stroke)
         print(40*"=")   
         #"""
-        
+        print("stroke:\n", stroke)
         return stroke
             
            
@@ -378,6 +394,7 @@ class material_paint(Operator):
         #print(event.pressure)
 
         if event.type in {'MOUSEMOVE'}:    
+            print("mouse move")
             #start_time = profiler(time.time(), "Start modal Profiling")  
             #""" 
             stroke  = self.collect_strokes(context, event)
@@ -387,6 +404,7 @@ class material_paint(Operator):
             move_length = math.sqrt(move_x * move_x + move_y * move_y)            
             brush_spacing = stroke[0]["size"] * 2 * (context.tool_settings.image_paint.brush.spacing / 100) #40
             
+            print("mouse move event:", move_length)
             #start_time = profiler(start_time, "modal profile 1")
 
             if (move_length >= brush_spacing):      #context.tool_settings.image_paint.brush.spacing
@@ -436,10 +454,10 @@ class material_paint(Operator):
         return {'PASS_THROUGH'}   
     
 
-            
     def invoke(self, context, event):
         #start_time = profiler(time.time(), "Start invoke Profiling")
         if event.type in {'LEFTMOUSE'}:
+            print("invoke stroke")
             self.last_mouse_x = event.mouse_region_x
             self.last_mouse_y = event.mouse_region_y            
             self.lastangle = context.tool_settings.image_paint.brush.texture_slot.angle
