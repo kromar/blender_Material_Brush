@@ -16,8 +16,8 @@ import copy
 import string
 import time
 from bpy.utils import register_class, unregister_class
-from bpy.props import IntProperty, StringProperty, CollectionProperty, EnumProperty
-from bpy.types import Panel, UIList, Operator, PropertyGroup, Menu
+from bpy.props import IntProperty, CollectionProperty, EnumProperty
+from bpy.types import Panel, UIList, Operator, PropertyGroup
 
 
 def profiler(start_time=False, string=None): 
@@ -177,6 +177,7 @@ class CustomProp(PropertyGroup):
     test: IntProperty()
     #temp_images = []
     
+    
 #start_time = None
 class material_paint(Operator):
     '''Paint material layers'''
@@ -187,8 +188,7 @@ class material_paint(Operator):
     stroke = []
     texture_slot_matrix = []
 
-    def fill_brush_stroke(self, x, y):      
-            
+    def fill_brush_stroke(self, x, y):   
         brushstroke = {
             "name": "defaultStroke",
             "pen_flip": False,
@@ -214,9 +214,9 @@ class material_paint(Operator):
 
     def stroke_mode(self, event, stroke): 
         if (self.lastmapmode == 'RANDOM'):
-                bpy.context.tool_settings.image_paint.brush.texture_slot.map_mode = 'TILED'
-                bpy.context.tool_settings.image_paint.brush.texture_slot.offset[0] = random.uniform(-2.0, 2.0)
-                bpy.context.tool_settings.image_paint.brush.texture_slot.offset[1] = random.uniform(-2.0, 2.0)
+            bpy.context.tool_settings.image_paint.brush.texture_slot.map_mode = 'TILED'
+            bpy.context.tool_settings.image_paint.brush.texture_slot.offset[0] = random.uniform(-2.0, 2.0)
+            bpy.context.tool_settings.image_paint.brush.texture_slot.offset[1] = random.uniform(-2.0, 2.0)
             
         elif (self.lastmapmode == 'VIEW_PLANE'):
             bpy.context.tool_settings.image_paint.brush.texture_slot.map_mode = 'TILED'
@@ -261,11 +261,9 @@ class material_paint(Operator):
         return stroke
             
            
-    def node_finder(self, material):
-        
+    def node_finder(self, material):        
         start_time = profiler(time.perf_counter(), "Start paint Profiling")
         texture_maps = {}
-
 
         def follow_node_links(mat_node):
             for node_input in mat_node.inputs:
