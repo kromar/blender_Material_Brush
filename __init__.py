@@ -1,10 +1,10 @@
 bl_info = {
     'name': 'Material Brush',
-    'author': 'Francisco Elizade, Daniel Grauer',
-    'version': (1, 0, 4),
-    'blender': (2, 90, 0),
-    'location': 'View3D - Texture Paint mode',
     'description': 'Paint all texture layers of materials simultaneously',
+    'author': 'Francisco Elizade, Daniel Grauer',
+    'version': (1, 0, 5),
+    'blender': (2, 90, 0),
+    'location': "View3D > Sidebar > Edit Tab",
     'category': 'Image Paint',
     'wiki_url': 'https://github.com/kromar/blender_Material_Brush',
 }
@@ -17,7 +17,7 @@ import string
 import time
 from bpy.utils import register_class, unregister_class
 from bpy.props import IntProperty, StringProperty, CollectionProperty, EnumProperty
-from bpy.types import Panel, UIList, Operator, PropertyGroup
+from bpy.types import Panel, UIList, Operator, PropertyGroup, Menu
 
 
 def profiler(start_time=False, string=None): 
@@ -141,9 +141,9 @@ class UIListMaterial(Panel):
     bl_idname = 'OBJECT_PT_my_panel'
     bl_space_type = 'VIEW_3D'    
     bl_region_type = 'UI'
-    bl_category = 'Tool'
+    bl_category = 'PBR'
     bl_context = 'imagepaint'
-    bl_label = "Material Brush"
+    bl_label = "PBR Brushes"
 
     def draw(self, context):
         layout = self.layout
