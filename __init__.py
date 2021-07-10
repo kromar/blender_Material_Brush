@@ -19,13 +19,17 @@ from bpy.utils import register_class, unregister_class
 from bpy.props import IntProperty, StringProperty, CollectionProperty, EnumProperty
 from bpy.types import Panel, UIList, Operator, PropertyGroup
 
-def profiler(start_time=None, string=None): 
-    if not start_time:
-        start_time = time.time()
-    elapsed = time.time()
-    print("{:.6f}".format((elapsed - start_time) * 1000), "ms << ", string)  
-    
-    return start_time  
+
+def profiler(start_time=False, string=None): 
+    elapsed = time.perf_counter()
+    measured_time = elapsed-start_time
+    if start_time:
+        print("{:.10f}".format(measured_time*1000), "ms << ", string)  
+    else:
+        print("debug_profiling: ", string)  
+        
+    start_time = time.perf_counter()
+    return start_time   
 
 
 # return name of selected object
@@ -259,7 +263,7 @@ class material_paint(Operator):
            
     def node_finder(self, material):
         
-        start_time = profiler(time.time(), "Start paint Profiling")
+        start_time = profiler(time.perf_counter(), "Start paint Profiling")
         texture_maps = {}
 
 
@@ -341,7 +345,7 @@ class material_paint(Operator):
 
    
     def paint_strokes(self, brush_id, stroke):
-        #start_time = profiler(time.time(), "Start paint Profiling")
+        #start_time = profiler(time.perf_counter(), "Start paint Profiling")
 
         ## TODO: replace this part with the new node texture system 
         #bpy.context.tool_settings.image_paint.brush.texture_slot.offset[1] -= move_y
@@ -395,7 +399,7 @@ class material_paint(Operator):
 
         if event.type in {'MOUSEMOVE'}:    
             print("mouse move")
-            #start_time = profiler(time.time(), "Start modal Profiling")  
+            #start_time = profiler(time.perf_counter(), "Start modal Profiling")  
             #""" 
             stroke  = self.collect_strokes(context, event)
             brush_id = context.scene.brush_index
@@ -455,7 +459,7 @@ class material_paint(Operator):
     
 
     def invoke(self, context, event):
-        #start_time = profiler(time.time(), "Start invoke Profiling")
+        #start_time = profiler(time.perf_counter(), "Start invoke Profiling")
         if event.type in {'LEFTMOUSE'}:
             print("invoke stroke")
             self.last_mouse_x = event.mouse_region_x
