@@ -2,7 +2,7 @@ bl_info = {
     'name': 'Material Brush',
     'description': 'Paint all texture layers of materials simultaneously',
     'author': 'Francisco Elizade, Daniel Grauer',
-    'version': (1, 0, 5),
+    'version': (1, 0, 6),
     'blender': (2, 90, 0),
     'location': "View3D > Sidebar > Edit Tab",
     'category': 'Image Paint',
