@@ -37,7 +37,6 @@ def get_activeSceneObject():
     return bpy.context.scene.objects.active.name
 
 
-
 # ui list item actions
 class Uilist_actions(Operator):
     bl_idname = "listbrushmats.list_action"
@@ -68,7 +67,9 @@ class Uilist_actions(Operator):
         except IndexError:
             pass
                 
-        if self.action == 'UPDATE':           
+        if self.action == 'UPDATE':     
+            '''this adds all materials to the active object. 
+                note: this will make the materials available in the paint tool'''    
             scene.listbrushmats.clear()    
             last_material_index = bpy.context.active_object.active_material_index                            
             for i in range(len(bpy.data.materials)):                                
@@ -125,35 +126,43 @@ class MP_UL_brushitems(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if context.active_object.active_material:
             if item.name == context.active_object.active_material.name:            
-                layout.prop(item, "name", text="", emboss=False, translate=False, icon='NODE_MATERIAL')
-            else:
                 layout.prop(item, "name", text="", emboss=False, translate=False, icon='BRUSH_TEXDRAW')
+            else:
+                layout.prop(item, "name", text="", emboss=False, translate=False, icon='BRUSH_DATA')
             #split = layout.split(factor=0.7)
             #split.label(text="Index: %d" % (index))
 
     def invoke(self, context, event):
         pass
-    
-    
+
+
 # draw the panel
-class UIListMaterial(Panel):
+class UIBrushPanel(Panel):
     """Creates a Panel in the Object properties window"""
-    bl_idname = 'OBJECT_PT_my_panel'
+    bl_idname = 'OBJECT_PT_brush_panel'
     bl_space_type = 'VIEW_3D'    
     bl_region_type = 'UI'
     bl_category = 'PBR'
     bl_context = 'imagepaint'
-    bl_label = "PBR Brushes"
+    bl_label = "PBR Brush"  
+    COMPAT_ENGINES = {'BLENDER_EEVEE', 'BLENDER_WORKBENCH'}
+
+    @classmethod
+    def poll(cls, context):
+        brush = context.tool_settings.image_paint.brush            
+        return (brush is not None and context.active_object is not None and (context.engine in cls.COMPAT_ENGINES))
 
     def draw(self, context):
         layout = self.layout
         scene = context.scene
+        settings = context.tool_settings.image_paint
+        ob = context.active_object
+
+        # PBR materials panel       
 
         rows = 2
         row = layout.row()
-        row.label(text="Select Brush")
-        col = row.column(align=True)
-        col.operator("listbrushmats.list_action", icon='FILE_REFRESH', text="Update List").action = 'UPDATE'
+        row.operator("listbrushmats.list_action", icon='FILE_REFRESH', text="Update Brushes").action = 'UPDATE'
                 
         row = layout.row()
         row.template_list("MP_UL_brushitems", "", scene, "listbrushmats", scene, "brush_index", rows=rows)  
@@ -168,6 +177,76 @@ class UIListMaterial(Panel):
         #set the texfaces using this material.
         brush_id = context.scene.brush_index      #brush iNdex    
         main(context, brush_id)
+            
+
+class UIMaterialPanel(Panel):
+    """Creates a Panel in the Object properties window"""
+    bl_idname = 'OBJECT_PT_material_panel'
+    bl_space_type = 'VIEW_3D'    
+    bl_region_type = 'UI'
+    bl_category = 'PBR'
+    bl_context = 'imagepaint'
+    bl_label = "Materials"   
+    COMPAT_ENGINES = {'BLENDER_EEVEE', 'BLENDER_WORKBENCH'}
+
+    @classmethod
+    def poll(cls, context):
+        brush = context.tool_settings.image_paint.brush            
+        return (brush is not None and context.active_object is not None and (context.engine in cls.COMPAT_ENGINES))
+
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        settings = context.tool_settings.image_paint
+        ob = context.active_object
+
+        layout.prop(settings, "mode", text="Mode")
+        layout.separator()
+
+        if settings.mode == 'MATERIAL':
+            mat = ob.active_material
+
+            if mat and mat.texture_paint_images:
+                # material panel
+                row = layout.row()
+                row.template_ID(ob, "active_material", new="material.new")  
+                rows = 3
+                row = layout.row()
+                row.template_list("MATERIAL_UL_matslots", "", ob, "material_slots", ob, "active_material_index", rows=rows)
+
+                col = row.column(align=True)
+                col.operator("object.material_slot_add", icon='ADD', text="")
+                col.operator("object.material_slot_remove", icon='REMOVE', text="")
+                col.separator()
+                col.menu("MATERIAL_MT_context_menu", icon='DOWNARROW_HLT', text="")
+
+                # material paint 
+                row = layout.row()
+                row.template_list("TEXTURE_UL_texpaintslots", "",
+                                  mat, "texture_paint_images",
+                                  mat, "paint_active_slot", rows=2)
+                if mat.texture_paint_slots:
+                    slot = mat.texture_paint_slots[mat.paint_active_slot]
+                else:
+                    slot = None
+
+                have_image = slot is not None
+
+
+            else:
+                row = layout.row()
+
+                box = row.box()
+                box.label(text="No Textures")
+                have_image = False
+
+            sub = row.column(align=True)
+            sub.operator_menu_enum("paint.add_texture_paint_slot", "type", icon='ADD', text="")
+            
+
+
+
+        
 
 
 # Create custom property group
@@ -389,6 +468,7 @@ class material_paint(Operator):
 
     @classmethod
     def poll(cls, context):
+        print("poll")
         return bpy.ops.paint.image_paint.poll()
 
    
@@ -515,7 +595,8 @@ def main(context, brush_id):
 classes = (
     Uilist_actions,
     MP_UL_brushitems,
-    UIListMaterial,
+    UIBrushPanel,
+    UIMaterialPanel,
     CustomProp,
     material_paint,    
     )
