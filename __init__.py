@@ -1,10 +1,10 @@
 bl_info = {
     'name': 'Material Brush',
-    'author': 'Francisco Elizade, Daniel Grauer',
-    'version': (1, 0, 3),
-    'blender': (2, 90, 0),
-    'location': 'View3D - Texture Paint mode',
     'description': 'Paint all texture layers of materials simultaneously',
+    'author': 'Francisco Elizade, Daniel Grauer',
+    'version': (1, 0, 6),
+    'blender': (2, 90, 0),
+    'location': "View3D > Sidebar > Edit Tab",
     'category': 'Image Paint',
     'wiki_url': 'https://github.com/kromar/blender_Material_Brush',
 }
@@ -16,22 +16,25 @@ import copy
 import string
 import time
 from bpy.utils import register_class, unregister_class
-from bpy.props import IntProperty, StringProperty, CollectionProperty, EnumProperty
+from bpy.props import IntProperty, CollectionProperty, EnumProperty
 from bpy.types import Panel, UIList, Operator, PropertyGroup
 
-def profiler(start_time=None, string=None): 
-    if not start_time:
-        start_time = time.time()
-    elapsed = time.time()
-    print("{:.6f}".format((elapsed - start_time) * 1000), "ms << ", string)  
-    
-    return start_time  
+
+def profiler(start_time=False, string=None): 
+    elapsed = time.perf_counter()
+    measured_time = elapsed-start_time
+    if start_time:
+        print("{:.10f}".format(measured_time*1000), "ms << ", string)  
+    else:
+        print("debug_profiling: ", string)  
+        
+    start_time = time.perf_counter()
+    return start_time   
 
 
 # return name of selected object
 def get_activeSceneObject():
     return bpy.context.scene.objects.active.name
-
 
 
 # ui list item actions
@@ -64,9 +67,20 @@ class Uilist_actions(Operator):
         except IndexError:
             pass
                 
-        if self.action == 'UPDATE':           
-            scene.listbrushmats.clear()                            
-            for i in range(len(bpy.data.materials)):
+        if self.action == 'UPDATE':     
+            '''this adds all materials to the active object. 
+                note: this will make the materials available in the paint tool'''    
+            scene.listbrushmats.clear()    
+            last_material_index = bpy.context.active_object.active_material_index                            
+            for i in range(len(bpy.data.materials)):                                
+                try:
+                    bpy.context.active_object.material_slots[i].link = 'DATA'
+                except:
+                    bpy.ops.object.material_slot_add()                
+                bpy.context.active_object.material_slots[i].material = bpy.data.materials[i]
+                bpy.ops.object.material_slot_assign()     
+                bpy.context.active_object.active_material_index = last_material_index            
+                
                 if(bpy.data.materials[i]): # != context.active_object.active_material):
                     item = scene.listbrushmats.add()
                     item.id = len(scene.listbrushmats)
@@ -112,35 +126,43 @@ class MP_UL_brushitems(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if context.active_object.active_material:
             if item.name == context.active_object.active_material.name:            
-                layout.prop(item, "name", text="", emboss=False, translate=False, icon='NODE_MATERIAL')
-            else:
                 layout.prop(item, "name", text="", emboss=False, translate=False, icon='BRUSH_TEXDRAW')
+            else:
+                layout.prop(item, "name", text="", emboss=False, translate=False, icon='BRUSH_DATA')
             #split = layout.split(factor=0.7)
             #split.label(text="Index: %d" % (index))
 
     def invoke(self, context, event):
         pass
-    
-    
+
+
 # draw the panel
-class UIListMaterial(Panel):
+class UIBrushPanel(Panel):
     """Creates a Panel in the Object properties window"""
-    bl_idname = 'OBJECT_PT_my_panel'
+    bl_idname = 'OBJECT_PT_brush_panel'
     bl_space_type = 'VIEW_3D'    
     bl_region_type = 'UI'
-    bl_category = 'Tool'
+    bl_category = 'PBR'
     bl_context = 'imagepaint'
-    bl_label = "Material Brush"
+    bl_label = "PBR Brush"  
+    COMPAT_ENGINES = {'BLENDER_EEVEE', 'BLENDER_WORKBENCH'}
+
+    @classmethod
+    def poll(cls, context):
+        brush = context.tool_settings.image_paint.brush            
+        return (brush is not None and context.active_object is not None and (context.engine in cls.COMPAT_ENGINES))
 
     def draw(self, context):
         layout = self.layout
         scene = context.scene
+        settings = context.tool_settings.image_paint
+        ob = context.active_object
+
+        # PBR materials panel       
 
         rows = 2
         row = layout.row()
-        row.label(text="Select Brush")
-        col = row.column(align=True)
-        col.operator("listbrushmats.list_action", icon='FILE_REFRESH', text="Update List").action = 'UPDATE'
+        row.operator("listbrushmats.list_action", icon='FILE_REFRESH', text="Update Brushes").action = 'UPDATE'
                 
         row = layout.row()
         row.template_list("MP_UL_brushitems", "", scene, "listbrushmats", scene, "brush_index", rows=rows)  
@@ -149,12 +171,82 @@ class UIListMaterial(Panel):
         row.label(text="Alt+Left Mouse Button to paint")
         #layout.label(text="Save Painted Material")
         row = layout.row(align=True)
-        row.operator("listbrushmats.list_action", text = "Save").action = 'SAVE'
-        row.operator("listbrushmats.list_action", text = "Discard").action = 'LOAD'
+        row.operator("listbrushmats.list_action", text = "Save Textures").action = 'SAVE'
+        row.operator("listbrushmats.list_action", text = "Discard Textures").action = 'LOAD'
                 
         #set the texfaces using this material.
         brush_id = context.scene.brush_index      #brush iNdex    
         main(context, brush_id)
+            
+
+class UIMaterialPanel(Panel):
+    """Creates a Panel in the Object properties window"""
+    bl_idname = 'OBJECT_PT_material_panel'
+    bl_space_type = 'VIEW_3D'    
+    bl_region_type = 'UI'
+    bl_category = 'PBR'
+    bl_context = 'imagepaint'
+    bl_label = "Materials"   
+    COMPAT_ENGINES = {'BLENDER_EEVEE', 'BLENDER_WORKBENCH'}
+
+    @classmethod
+    def poll(cls, context):
+        brush = context.tool_settings.image_paint.brush            
+        return (brush is not None and context.active_object is not None and (context.engine in cls.COMPAT_ENGINES))
+
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        settings = context.tool_settings.image_paint
+        ob = context.active_object
+
+        layout.prop(settings, "mode", text="Mode")
+        layout.separator()
+
+        if settings.mode == 'MATERIAL':
+            mat = ob.active_material
+
+            if mat and mat.texture_paint_images:
+                # material panel
+                row = layout.row()
+                row.template_ID(ob, "active_material", new="material.new")  
+                rows = 3
+                row = layout.row()
+                row.template_list("MATERIAL_UL_matslots", "", ob, "material_slots", ob, "active_material_index", rows=rows)
+
+                col = row.column(align=True)
+                col.operator("object.material_slot_add", icon='ADD', text="")
+                col.operator("object.material_slot_remove", icon='REMOVE', text="")
+                col.separator()
+                col.menu("MATERIAL_MT_context_menu", icon='DOWNARROW_HLT', text="")
+
+                # material paint 
+                row = layout.row()
+                row.template_list("TEXTURE_UL_texpaintslots", "",
+                                  mat, "texture_paint_images",
+                                  mat, "paint_active_slot", rows=2)
+                if mat.texture_paint_slots:
+                    slot = mat.texture_paint_slots[mat.paint_active_slot]
+                else:
+                    slot = None
+
+                have_image = slot is not None
+
+
+            else:
+                row = layout.row()
+
+                box = row.box()
+                box.label(text="No Textures")
+                have_image = False
+
+            sub = row.column(align=True)
+            sub.operator_menu_enum("paint.add_texture_paint_slot", "type", icon='ADD', text="")
+            
+
+
+
+        
 
 
 # Create custom property group
@@ -163,6 +255,7 @@ class CustomProp(PropertyGroup):
     id: IntProperty()
     test: IntProperty()
     #temp_images = []
+    
     
 #start_time = None
 class material_paint(Operator):
@@ -174,8 +267,7 @@ class material_paint(Operator):
     stroke = []
     texture_slot_matrix = []
 
-    def fill_brush_stroke(self, x, y):      
-            
+    def fill_brush_stroke(self, x, y):   
         brushstroke = {
             "name": "defaultStroke",
             "pen_flip": False,
@@ -184,7 +276,10 @@ class material_paint(Operator):
             "mouse": (x, y),
             "pressure": 1,
             "size": bpy.context.tool_settings.unified_paint_settings.size,
-            "time": self.time
+            "time": self.time,
+            #"mouse_event": (0.0, 0.0),
+            #"x_tilt": 0,
+            #"y_tilt": 0,
             }
 
         if bpy.app.version >= (2, 91, 0):  
@@ -192,14 +287,15 @@ class material_paint(Operator):
             brushstroke["x_tilt"] = 0 
             brushstroke["y_tilt"] = 0
 
+            #print(brushstroke)
         return brushstroke
     
 
     def stroke_mode(self, event, stroke): 
         if (self.lastmapmode == 'RANDOM'):
-                bpy.context.tool_settings.image_paint.brush.texture_slot.map_mode = 'TILED'
-                bpy.context.tool_settings.image_paint.brush.texture_slot.offset[0] = random.uniform(-2.0, 2.0)
-                bpy.context.tool_settings.image_paint.brush.texture_slot.offset[1] = random.uniform(-2.0, 2.0)
+            bpy.context.tool_settings.image_paint.brush.texture_slot.map_mode = 'TILED'
+            bpy.context.tool_settings.image_paint.brush.texture_slot.offset[0] = random.uniform(-2.0, 2.0)
+            bpy.context.tool_settings.image_paint.brush.texture_slot.offset[1] = random.uniform(-2.0, 2.0)
             
         elif (self.lastmapmode == 'VIEW_PLANE'):
             bpy.context.tool_settings.image_paint.brush.texture_slot.map_mode = 'TILED'
@@ -218,9 +314,12 @@ class material_paint(Operator):
     def collect_strokes(self, context, event):
         self.stroke = []    ## TODO: create new stroke list
         brushstroke = self.fill_brush_stroke(event.mouse_region_x, event.mouse_region_y) 
+
         brushstroke["is_start"] = True
         self.stroke.append(copy.deepcopy(brushstroke))
+
         brushstroke["is_start"] = False
+        
         self.stroke.append(brushstroke)
         args = (self, context)                
         x = self.stroke[0]["mouse"][0]
@@ -237,15 +336,13 @@ class material_paint(Operator):
         print("\nSTROKE 1: \n", stroke)
         print(40*"=")   
         #"""
-        
+        print("stroke:\n", stroke)
         return stroke
             
            
-    def node_finder(self, material):
-        
-        start_time = profiler(time.time(), "Start paint Profiling")
+    def node_finder(self, material):        
+        start_time = profiler(time.perf_counter(), "Start paint Profiling")
         texture_maps = {}
-
 
         def follow_node_links(mat_node):
             for node_input in mat_node.inputs:
@@ -325,7 +422,7 @@ class material_paint(Operator):
 
    
     def paint_strokes(self, brush_id, stroke):
-        #start_time = profiler(time.time(), "Start paint Profiling")
+        #start_time = profiler(time.perf_counter(), "Start paint Profiling")
 
         ## TODO: replace this part with the new node texture system 
         #bpy.context.tool_settings.image_paint.brush.texture_slot.offset[1] -= move_y
@@ -371,6 +468,7 @@ class material_paint(Operator):
 
     @classmethod
     def poll(cls, context):
+        print("poll")
         return bpy.ops.paint.image_paint.poll()
 
    
@@ -378,7 +476,8 @@ class material_paint(Operator):
         #print(event.pressure)
 
         if event.type in {'MOUSEMOVE'}:    
-            #start_time = profiler(time.time(), "Start modal Profiling")  
+            print("mouse move")
+            #start_time = profiler(time.perf_counter(), "Start modal Profiling")  
             #""" 
             stroke  = self.collect_strokes(context, event)
             brush_id = context.scene.brush_index
@@ -387,6 +486,7 @@ class material_paint(Operator):
             move_length = math.sqrt(move_x * move_x + move_y * move_y)            
             brush_spacing = stroke[0]["size"] * 2 * (context.tool_settings.image_paint.brush.spacing / 100) #40
             
+            print("mouse move event:", move_length)
             #start_time = profiler(start_time, "modal profile 1")
 
             if (move_length >= brush_spacing):      #context.tool_settings.image_paint.brush.spacing
@@ -436,10 +536,10 @@ class material_paint(Operator):
         return {'PASS_THROUGH'}   
     
 
-            
     def invoke(self, context, event):
-        #start_time = profiler(time.time(), "Start invoke Profiling")
+        #start_time = profiler(time.perf_counter(), "Start invoke Profiling")
         if event.type in {'LEFTMOUSE'}:
+            print("invoke stroke")
             self.last_mouse_x = event.mouse_region_x
             self.last_mouse_y = event.mouse_region_y            
             self.lastangle = context.tool_settings.image_paint.brush.texture_slot.angle
@@ -495,7 +595,8 @@ def main(context, brush_id):
 classes = (
     Uilist_actions,
     MP_UL_brushitems,
-    UIListMaterial,
+    UIBrushPanel,
+    UIMaterialPanel,
     CustomProp,
     material_paint,    
     )
