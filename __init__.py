@@ -219,7 +219,8 @@ class UIMaterialPanel(Panel):
                 col.operator("object.material_slot_remove", icon='REMOVE', text="")
                 col.separator()
                 col.menu("MATERIAL_MT_context_menu", icon='DOWNARROW_HLT', text="")
-
+                
+                
                 # material paint 
                 row = layout.row()
                 row.template_list("TEXTURE_UL_texpaintslots", "",
@@ -227,11 +228,45 @@ class UIMaterialPanel(Panel):
                                   mat, "paint_active_slot", rows=2)
                 if mat.texture_paint_slots:
                     slot = mat.texture_paint_slots[mat.paint_active_slot]
+                    
+                    paint = context.tool_settings.image_paint.texture
+                    #print("TEST: ", mat.texture_paint_images[slot])
+                    print("SLOT: ", slot, paint)
+
+                    """ for i in mat.texture_paint_images:
+                        print(i) """
+
+                    #print("SLOT: ", mat.texture_paint_images)
+                    """ layout = self.layout
+                    layout.use_property_split = True
+
+                    #sima = context.space_data
+                    ima = slot.image
+
+                    #show_uvedit = slot.show_uvedit
+                    #uvedit = slot.uv_editor
+
+                    col = layout.column()
+
+                    if ima:
+                        col.prop(ima, "display_aspect", text="Aspect Ratio")
+                        row = col.row()
+                        row.active = ima.source != 'TILED'
+                        row.prop(slot, "show_repeat", text="Repeat Image") """
+
+                    """ if show_uvedit:
+                        col.prop(uvedit, "show_pixel_coords", text="Pixel Coordinates")
+                    """
+
+
                 else:
                     slot = None
 
                 have_image = slot is not None
 
+
+               
+                    
 
             else:
                 row = layout.row()
@@ -243,7 +278,48 @@ class UIMaterialPanel(Panel):
             sub = row.column(align=True)
             sub.operator_menu_enum("paint.add_texture_paint_slot", "type", icon='ADD', text="")
             
+                
+           
 
+
+class UITexturePanel(Panel):
+    """ bl_space_type = 'IMAGE_EDITOR'
+    bl_region_type = 'UI'
+    bl_label = "Display"
+    bl_category = "View" """
+    
+    bl_idname = 'OBJECT_PT_text4re_panel'
+    bl_space_type = 'VIEW_3D'    
+    bl_region_type = 'UI'
+    bl_category = 'PBR'
+    bl_context = 'imagepaint'
+    bl_label = "Textures"   
+
+    """ @classmethod
+    def poll(cls, context):
+        sima = context.space_data
+        return (sima and (sima.image or sima.show_uvedit)) """
+
+    """ def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+
+        sima = context.space_data
+        ima = sima.image
+
+        show_uvedit = sima.show_uvedit
+        uvedit = sima.uv_editor
+
+        col = layout.column()
+
+        if ima:
+            col.prop(ima, "display_aspect", text="Aspect Ratio")
+            row = col.row()
+            row.active = ima.source != 'TILED'
+            #row.prop(sima, "show_repeat", text="Repeat Image")
+
+        if show_uvedit:
+            col.prop(uvedit, "show_pixel_coords", text="Pixel Coordinates") """
 
 
         
@@ -597,6 +673,7 @@ classes = (
     MP_UL_brushitems,
     UIBrushPanel,
     UIMaterialPanel,
+    UITexturePanel,
     CustomProp,
     material_paint,    
     )
