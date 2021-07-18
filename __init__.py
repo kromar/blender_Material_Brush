@@ -284,13 +284,13 @@ class UITexturePanel(Panel):
                     texture = context.tool_settings.image_paint.brush.texture
                     texture_slot = texture = context.tool_settings.image_paint.brush.texture_slot
                     
-                    print("brush index: ", context.tool_settings.image_paint.brush, texture, texture_slot, slot, sep="\n")
+                    #print("brush index: ", context.tool_settings.image_paint.brush, texture, texture_slot, slot, sep="\n")
                     active_material = bpy.data.materials[mat.name]
-                    print("brush textures: ", active_material.paint_active_slot, sep="")
-                    print("brush textures: ", active_material.texture_paint_images[:], sep="")
-                    print("brush textures: ", active_material.texture_paint_slots[active_material.paint_active_slot], sep="")
+                    #print("brush textures: ", active_material.paint_active_slot, sep="")
+                    #print("brush textures: ", active_material.texture_paint_images[:], sep="")
+                    #print("brush textures: ", active_material.texture_paint_slots[active_material.paint_active_slot], sep="")
                     
-                    print("brush textures: ", active_material.texture_paint_images[active_material.paint_active_slot], sep="")
+                    print("active texture: ", active_material.texture_paint_images[active_material.paint_active_slot].name, sep="")
                     
                     #paint = context.tool_settings.image_paint.texture
                     #print("TEST: ", mat.texture_paint_images[slot])
@@ -305,22 +305,28 @@ class UITexturePanel(Panel):
                         print(i) """
 
                     #print("SLOT: ", mat.texture_paint_images)
-                    """ layout = self.layout
+                    layout = self.layout
                     layout.use_property_split = True
 
                     #sima = context.space_data
-                    ima = slot.image
+                    #img = slot.image
+                    img = active_material.texture_paint_images[active_material.paint_active_slot]
 
                     #show_uvedit = slot.show_uvedit
                     #uvedit = slot.uv_editor
 
-                    col = layout.column()
 
-                    if ima:
-                        col.prop(ima, "display_aspect", text="Aspect Ratio")
+                    if img:
+                         
+                        row = layout.row()
+                        box = row.box()
+                        box.label(text=img.name)
+                
+                        """ col = layout.column()
+                        col.prop(img, "display_aspect", text="Aspect Ratio")
                         row = col.row()
-                        row.active = ima.source != 'TILED'
-                        row.prop(slot, "show_repeat", text="Repeat Image") """
+                        row.active = img.source != 'TILED' """
+                        #row.prop(slot, "show_repeat", text="Repeat Image") 
 
                     """ if show_uvedit:
                         col.prop(uvedit, "show_pixel_coords", text="Pixel Coordinates")
@@ -352,17 +358,17 @@ class UITexturePanel(Panel):
         layout.use_property_split = True
 
         sima = context.space_data
-        ima = sima.image
+        img = sima.image
 
         show_uvedit = sima.show_uvedit
         uvedit = sima.uv_editor
 
         col = layout.column()
 
-        if ima:
-            col.prop(ima, "display_aspect", text="Aspect Ratio")
+        if img:
+            col.prop(img, "display_aspect", text="Aspect Ratio")
             row = col.row()
-            row.active = ima.source != 'TILED'
+            row.active = img.source != 'TILED'
             #row.prop(sima, "show_repeat", text="Repeat Image")
 
         if show_uvedit:
