@@ -177,6 +177,8 @@ class UIBrushPanel(Panel):
         #set the texfaces using this material.
         brush_id = context.scene.brush_index      #brush iNdex    
         main(context, brush_id)
+
+
             
 
 class UIMaterialPanel(Panel):
@@ -202,6 +204,7 @@ class UIMaterialPanel(Panel):
 
         layout.prop(settings, "mode", text="Mode")
         layout.separator()
+        
 
         if settings.mode == 'MATERIAL':
             mat = ob.active_material
@@ -219,8 +222,7 @@ class UIMaterialPanel(Panel):
                 col.operator("object.material_slot_remove", icon='REMOVE', text="")
                 col.separator()
                 col.menu("MATERIAL_MT_context_menu", icon='DOWNARROW_HLT', text="")
-                
-                
+
                 # material paint 
                 row = layout.row()
                 row.template_list("TEXTURE_UL_texpaintslots", "",
@@ -228,11 +230,68 @@ class UIMaterialPanel(Panel):
                                   mat, "paint_active_slot", rows=2)
                 if mat.texture_paint_slots:
                     slot = mat.texture_paint_slots[mat.paint_active_slot]
-                    
-                    paint = context.tool_settings.image_paint.texture
-                    #print("TEST: ", mat.texture_paint_images[slot])
-                    print("SLOT: ", slot, paint)
+                else:
+                    slot = None
 
+                have_image = slot is not None
+
+
+            else:
+                row = layout.row()
+
+                box = row.box()
+                box.label(text="No Textures")
+                have_image = False
+
+            sub = row.column(align=True)
+            sub.operator_menu_enum("paint.add_texture_paint_slot", "type", icon='ADD', text="")
+
+
+        
+            
+                
+           
+
+
+class UITexturePanel(Panel):    
+    bl_idname = 'OBJECT_PT_texture_panel'
+    bl_space_type = 'VIEW_3D'    
+    bl_region_type = 'UI'
+    bl_category = 'PBR'
+    bl_context = 'imagepaint'
+    bl_label = "Textures"   
+    COMPAT_ENGINES = {'BLENDER_EEVEE', 'BLENDER_WORKBENCH'}
+
+    @classmethod
+    def poll(cls, context):
+        brush = context.tool_settings.image_paint.brush            
+        return (brush is not None and context.active_object is not None and (context.engine in cls.COMPAT_ENGINES))
+
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        settings = context.tool_settings.image_paint
+        ob = context.active_object
+    
+        if settings.mode == 'MATERIAL':
+            mat = ob.active_material
+
+            if mat and mat.texture_paint_images:
+                if mat.texture_paint_slots:
+                    slot = mat.texture_paint_slots[mat.paint_active_slot]
+                    texture = context.tool_settings.image_paint.brush.texture
+                    texture_slot = texture = context.tool_settings.image_paint.brush.texture_slot
+                    
+                    print("brush index: ", context.tool_settings.image_paint.brush, texture, texture_slot, slot, sep="\n")
+                    #paint = context.tool_settings.image_paint.texture
+                    #print("TEST: ", mat.texture_paint_images[slot])
+                    #print("SLOT: ", slot, paint)
+                    layout = self.layout
+
+                    #texture panel TODO: need to fix texture context
+                    #tex = context.texture
+                    #layout.template_image(tex, "image", tex.image_user)
+                    
                     """ for i in mat.texture_paint_images:
                         print(i) """
 
@@ -258,43 +317,7 @@ class UIMaterialPanel(Panel):
                         col.prop(uvedit, "show_pixel_coords", text="Pixel Coordinates")
                     """
 
-
-                else:
-                    slot = None
-
-                have_image = slot is not None
-
-
-               
-                    
-
-            else:
-                row = layout.row()
-
-                box = row.box()
-                box.label(text="No Textures")
-                have_image = False
-
-            sub = row.column(align=True)
-            sub.operator_menu_enum("paint.add_texture_paint_slot", "type", icon='ADD', text="")
-            
-                
-           
-
-
-class UITexturePanel(Panel):
-    """ bl_space_type = 'IMAGE_EDITOR'
-    bl_region_type = 'UI'
-    bl_label = "Display"
-    bl_category = "View" """
     
-    bl_idname = 'OBJECT_PT_text4re_panel'
-    bl_space_type = 'VIEW_3D'    
-    bl_region_type = 'UI'
-    bl_category = 'PBR'
-    bl_context = 'imagepaint'
-    bl_label = "Textures"   
-
     """ @classmethod
     def poll(cls, context):
         sima = context.space_data
