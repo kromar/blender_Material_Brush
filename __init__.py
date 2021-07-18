@@ -279,59 +279,69 @@ class UITexturePanel(Panel):
             
             if mat and mat.texture_paint_images:
                 if mat.texture_paint_slots:
-                    slot = mat.texture_paint_slots[mat.paint_active_slot]
-                    
-                    texture = context.tool_settings.image_paint.brush.texture
-                    texture_slot = texture = context.tool_settings.image_paint.brush.texture_slot
-                    
-                    #print("brush index: ", context.tool_settings.image_paint.brush, texture, texture_slot, slot, sep="\n")
                     active_material = bpy.data.materials[mat.name]
+                    #texture = context.tool_settings.image_paint.brush.texture
+                    #texture_slot = texture = context.tool_settings.image_paint.brush.texture_slot
+                    
+                    #slot = mat.texture_paint_slots[mat.paint_active_slot]
+                    slot = active_material.paint_active_slot
+                    brush_img = active_material.texture_paint_images[slot]
+
+                    #print("brush index: ", context.tool_settings.image_paint.brush, texture, texture_slot, slot, sep="\n")                    
                     #print("brush textures: ", active_material.paint_active_slot, sep="")
                     #print("brush textures: ", active_material.texture_paint_images[:], sep="")
                     #print("brush textures: ", active_material.texture_paint_slots[active_material.paint_active_slot], sep="")
+                    image = bpy.data.images[brush_img.name]
                     
-                    print("active texture: ", active_material.texture_paint_images[active_material.paint_active_slot].name, sep="")
-                    
-                    #paint = context.tool_settings.image_paint.texture
-                    #print("TEST: ", mat.texture_paint_images[slot])
-                    #print("SLOT: ", slot, paint)
+                    #crate texture from images which are not users of a texture
+                    try:               
+                        texture = bpy.data.textures[brush_img.name]
+                        print("texture exists")
+                    except:                    
+                        texture = bpy.data.textures.new(brush_img.name, "IMAGE")
+                        print("creating texture")    
+                        
+                        bpy.data.textures[brush_img.name].image = brush_img
+                        print("assign image to texture")
+                            
+                    print(texture)
+
                     layout = self.layout
+                    row = layout.row(align=True)
+                    row.template_preview(texture)
 
                     #texture panel TODO: need to fix texture context
                     #tex = context.texture
-                    #layout.template_image(tex, "image", tex.image_user)
+                    #layout.template_image(data, property, image_user, compact=False, multiview=False)
+                    #layout.template_image(texture, "image", image_user=texture.image_user)
                     
-                    """ for i in mat.texture_paint_images:
-                        print(i) """
+                    #layout.template_image_settings(image_settings, color_management=False)
+                    #layout.template_image_views(image_settings)                    
+                    #layout.template_preview(id, show_buttons=True, parent=None, slot=None, preview_id='')
+                    
 
                     #print("SLOT: ", mat.texture_paint_images)
                     layout = self.layout
                     layout.use_property_split = True
 
-                    #sima = context.space_data
-                    #img = slot.image
-                    img = active_material.texture_paint_images[active_material.paint_active_slot]
-
-                    #show_uvedit = slot.show_uvedit
-                    #uvedit = slot.uv_editor
+                    
+                    print("active texture: ", image.name, sep="")
 
 
-                    if img:
+                    if image:
                          
                         row = layout.row()
                         box = row.box()
-                        box.label(text=img.name)
-                
-                        """ col = layout.column()
-                        col.prop(img, "display_aspect", text="Aspect Ratio")
-                        row = col.row()
-                        row.active = img.source != 'TILED' """
-                        #row.prop(slot, "show_repeat", text="Repeat Image") 
+                        box.label(text=image.name)                   
+                        
 
                     """ if show_uvedit:
                         col.prop(uvedit, "show_pixel_coords", text="Pixel Coordinates")
                     """
-    
+                
+                    
+
+
     
     '''
         mat = bpy.data.materials.new(name=name)
@@ -597,7 +607,7 @@ class material_paint(Operator):
 
     @classmethod
     def poll(cls, context):
-        print("poll")
+        print("poll image_paint")
         return bpy.ops.paint.image_paint.poll()
 
    
