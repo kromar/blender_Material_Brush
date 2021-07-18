@@ -272,17 +272,26 @@ class UITexturePanel(Panel):
         scene = context.scene
         settings = context.tool_settings.image_paint
         ob = context.active_object
-    
+        
+        
         if settings.mode == 'MATERIAL':
             mat = ob.active_material
-
+            
             if mat and mat.texture_paint_images:
                 if mat.texture_paint_slots:
                     slot = mat.texture_paint_slots[mat.paint_active_slot]
+                    
                     texture = context.tool_settings.image_paint.brush.texture
                     texture_slot = texture = context.tool_settings.image_paint.brush.texture_slot
                     
                     print("brush index: ", context.tool_settings.image_paint.brush, texture, texture_slot, slot, sep="\n")
+                    active_material = bpy.data.materials[mat.name]
+                    print("brush textures: ", active_material.paint_active_slot, sep="")
+                    print("brush textures: ", active_material.texture_paint_images[:], sep="")
+                    print("brush textures: ", active_material.texture_paint_slots[active_material.paint_active_slot], sep="")
+                    
+                    print("brush textures: ", active_material.texture_paint_images[active_material.paint_active_slot], sep="")
+                    
                     #paint = context.tool_settings.image_paint.texture
                     #print("TEST: ", mat.texture_paint_images[slot])
                     #print("SLOT: ", slot, paint)
@@ -316,7 +325,22 @@ class UITexturePanel(Panel):
                     """ if show_uvedit:
                         col.prop(uvedit, "show_pixel_coords", text="Pixel Coordinates")
                     """
+    
+    
+    '''
+        mat = bpy.data.materials.new(name=name)
+        mat.use_nodes = True
+        bsdf = mat.node_tree.nodes["Principled BSDF"]
+        texImage = mat.node_tree.nodes.new('ShaderNodeTexImage')
+        texImage.image = bpy.data.images.load("C:\\path\\to\\im.jpg")
+        mat.node_tree.links.new(bsdf.inputs['Base Color'], texImage.outputs['Color'])
 
+        # Assign it to object
+        if ob.data.materials:
+            ob.data.materials[0] = mat
+        else:
+            ob.data.materials.append(mat)
+    '''
     
     """ @classmethod
     def poll(cls, context):
