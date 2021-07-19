@@ -188,13 +188,12 @@ class UIMaterialPanel(Panel):
     bl_region_type = 'UI'
     bl_category = 'PBR'
     bl_context = 'imagepaint'
-    bl_label = "Materials"   
-    COMPAT_ENGINES = {'BLENDER_EEVEE', 'BLENDER_WORKBENCH'}
+    bl_label = "Materials"
 
     @classmethod
     def poll(cls, context):
         brush = context.tool_settings.image_paint.brush            
-        return (brush is not None and context.active_object is not None and (context.engine in cls.COMPAT_ENGINES))
+        return (brush is not None and context.active_object is not None)
 
     def draw(self, context):
         layout = self.layout
@@ -247,12 +246,6 @@ class UIMaterialPanel(Panel):
             sub.operator_menu_enum("paint.add_texture_paint_slot", "type", icon='ADD', text="")
 
 
-        
-            
-                
-           
-
-
 class UITexturePanel(Panel):    
     bl_idname = 'OBJECT_PT_texture_panel'
     bl_space_type = 'VIEW_3D'    
@@ -260,12 +253,11 @@ class UITexturePanel(Panel):
     bl_category = 'PBR'
     bl_context = 'imagepaint'
     bl_label = "Textures"   
-    COMPAT_ENGINES = {'BLENDER_EEVEE', 'BLENDER_WORKBENCH'}
 
     @classmethod
     def poll(cls, context):
         brush = context.tool_settings.image_paint.brush            
-        return (brush is not None and context.active_object is not None and (context.engine in cls.COMPAT_ENGINES))
+        return (brush is not None and context.active_object is not None)
 
     def draw(self, context):
         layout = self.layout
@@ -279,60 +271,47 @@ class UITexturePanel(Panel):
             
             if mat and mat.texture_paint_images:
                 if mat.texture_paint_slots:
-                    active_material = bpy.data.materials[mat.name]
+                    active_material = bpy.data.materials[mat.name]                    
                     #texture = context.tool_settings.image_paint.brush.texture
-                    #texture_slot = texture = context.tool_settings.image_paint.brush.texture_slot
-                    
+                    #texture_slot = texture = context.tool_settings.image_paint.brush.texture_slot                    
                     #slot = mat.texture_paint_slots[mat.paint_active_slot]
                     slot = active_material.paint_active_slot
                     brush_img = active_material.texture_paint_images[slot]
-
                     #print("brush index: ", context.tool_settings.image_paint.brush, texture, texture_slot, slot, sep="\n")                    
                     #print("brush textures: ", active_material.paint_active_slot, sep="")
                     #print("brush textures: ", active_material.texture_paint_images[:], sep="")
                     #print("brush textures: ", active_material.texture_paint_slots[active_material.paint_active_slot], sep="")
-                    image = bpy.data.images[brush_img.name]
+                    active_image = bpy.data.images[brush_img.name]
+                    #print("active image: ", active_image.name, sep="")
+                    #active_texture = bpy.data.textures[active_image.name]
                     
                     #crate texture from images which are not users of a texture
-                    try:               
-                        texture = bpy.data.textures[brush_img.name]
-                        print("texture exists")
-                    except:                    
-                        texture = bpy.data.textures.new(brush_img.name, "IMAGE")
-                        print("creating texture")    
+                    if not active_image.name in bpy.data.textures:
+                        active_texture = bpy.data.textures.new(active_image.name, "IMAGE")
+                         
+                    else:                         
+                        active_texture = bpy.data.textures[active_image.name]
+                        #print("texture exists", active_texture)
                         
-                        bpy.data.textures[brush_img.name].image = brush_img
-                        print("assign image to texture")
-                            
-                    print(texture)
+                     
+                    if not active_texture.image:
+                        #image = bpy.data.images[active_image.name]
+                        #active_texture.image = brush_img
+                        print("created missing textue ", active_texture, brush_img) 
 
-                    layout = self.layout
-                    row = layout.row(align=True)
-                    row.template_preview(texture)
-
-                    #texture panel TODO: need to fix texture context
-                    #tex = context.texture
-                    #layout.template_image(data, property, image_user, compact=False, multiview=False)
-                    #layout.template_image(texture, "image", image_user=texture.image_user)
                     
-                    #layout.template_image_settings(image_settings, color_management=False)
-                    #layout.template_image_views(image_settings)                    
-                    #layout.template_preview(id, show_buttons=True, parent=None, slot=None, preview_id='')
-                    
-
-                    #print("SLOT: ", mat.texture_paint_images)
                     layout = self.layout
                     layout.use_property_split = True
-
                     
-                    print("active texture: ", image.name, sep="")
-
-
-                    if image:
-                         
+                    if active_image:                         
                         row = layout.row()
                         box = row.box()
-                        box.label(text=image.name)                   
+                        box.label(text=active_image.name)    
+                        
+                        row = layout.row(align=True)
+                        #layout.template_preview(id, show_buttons=True, parent=None, slot=None, preview_id='')
+                        #row.template_preview(texture, show_buttons=False, parent=None, slot=None, preview_id='')    
+                        layout.template_image(active_texture, "image", image_user=active_texture.image_user)        #layout.template_image(texture, "image", image_user=texture.image_user)       
                         
 
                     """ if show_uvedit:
