@@ -179,8 +179,6 @@ class UIBrushPanel(Panel):
         main(context, brush_id)
 
 
-            
-
 class UIMaterialPanel(Panel):
     """Creates a Panel in the Object properties window"""
     bl_idname = 'OBJECT_PT_material_panel'
@@ -202,8 +200,7 @@ class UIMaterialPanel(Panel):
         ob = context.active_object
 
         layout.prop(settings, "mode", text="Mode")
-        layout.separator()
-        
+        layout.separator()        
 
         if settings.mode == 'MATERIAL':
             mat = ob.active_material
@@ -214,7 +211,9 @@ class UIMaterialPanel(Panel):
                 row.template_ID(ob, "active_material", new="material.new")  
                 rows = 3
                 row = layout.row()
-                row.template_list("MATERIAL_UL_matslots", "", ob, "material_slots", ob, "active_material_index", rows=rows)
+                row.template_list("MATERIAL_UL_matslots", "",
+                                     ob, "material_slots", 
+                                     ob, "active_material_index", rows=rows)
 
                 col = row.column(align=True)
                 col.operator("object.material_slot_add", icon='ADD', text="")
@@ -224,7 +223,7 @@ class UIMaterialPanel(Panel):
 
                 # material paint 
                 row = layout.row()
-                row.template_list("TEXTURE_UL_texpaintslots", "",
+                row.template_list("TEXTURE_UL_texpaintslots", "", 
                                   mat, "texture_paint_images",
                                   mat, "paint_active_slot", rows=2)
                 if mat.texture_paint_slots:
@@ -237,7 +236,6 @@ class UIMaterialPanel(Panel):
 
             else:
                 row = layout.row()
-
                 box = row.box()
                 box.label(text="No Textures")
                 have_image = False
@@ -287,12 +285,10 @@ class UITexturePanel(Panel):
                     
                     #crate texture from images which are not users of a texture
                     if not active_image.name in bpy.data.textures:
-                        active_texture = bpy.data.textures.new(active_image.name, "IMAGE")
-                         
+                        active_texture = bpy.data.textures.new(active_image.name, "IMAGE")                         
                     else:                         
                         active_texture = bpy.data.textures[active_image.name]
-                        #print("texture exists", active_texture)
-                        
+                        #print("texture exists", active_texture)                        
                      
                     if not active_texture.image:
                         #image = bpy.data.images[active_image.name]
@@ -314,55 +310,7 @@ class UITexturePanel(Panel):
                         layout.template_image(active_texture, "image", image_user=active_texture.image_user)        #layout.template_image(texture, "image", image_user=texture.image_user)       
                         
 
-                    """ if show_uvedit:
-                        col.prop(uvedit, "show_pixel_coords", text="Pixel Coordinates")
-                    """
-                
                     
-
-
-    
-    '''
-        mat = bpy.data.materials.new(name=name)
-        mat.use_nodes = True
-        bsdf = mat.node_tree.nodes["Principled BSDF"]
-        texImage = mat.node_tree.nodes.new('ShaderNodeTexImage')
-        texImage.image = bpy.data.images.load("C:\\path\\to\\im.jpg")
-        mat.node_tree.links.new(bsdf.inputs['Base Color'], texImage.outputs['Color'])
-
-        # Assign it to object
-        if ob.data.materials:
-            ob.data.materials[0] = mat
-        else:
-            ob.data.materials.append(mat)
-    '''
-    
-    """ @classmethod
-    def poll(cls, context):
-        sima = context.space_data
-        return (sima and (sima.image or sima.show_uvedit)) """
-
-    """ def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = True
-
-        sima = context.space_data
-        img = sima.image
-
-        show_uvedit = sima.show_uvedit
-        uvedit = sima.uv_editor
-
-        col = layout.column()
-
-        if img:
-            col.prop(img, "display_aspect", text="Aspect Ratio")
-            row = col.row()
-            row.active = img.source != 'TILED'
-            #row.prop(sima, "show_repeat", text="Repeat Image")
-
-        if show_uvedit:
-            col.prop(uvedit, "show_pixel_coords", text="Pixel Coordinates") """
-
 
         
 
