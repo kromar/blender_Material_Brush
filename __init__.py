@@ -2,8 +2,8 @@ bl_info = {
     'name': 'Material Brush',
     'description': 'Paint all texture layers of materials simultaneously',
     'author': 'Francisco Elizade, Daniel Grauer',
-    'version': (1, 0, 6),
-    'blender': (2, 90, 0),
+    'version': (1, 0, 7),
+    'blender': (2, 92, 0),
     'location': "View3D > Sidebar > Edit Tab",
     'category': 'Image Paint',
     'wiki_url': 'https://github.com/kromar/blender_Material_Brush',
@@ -289,12 +289,13 @@ class UITexturePanel(Panel):
                     else:                         
                         active_texture = bpy.data.textures[active_image.name]
                         #print("texture exists", active_texture)                        
-                     
+
+                    #TODO: does every brush need to have a assigned texture? there are many images that are not assigned to a texture 
                     if not active_texture.image:
                         #image = bpy.data.images[active_image.name]
                         #active_texture.image = brush_img
-                        print("created missing textue ", active_texture, brush_img) 
-
+                        #print("MB: created missing textue ", active_texture, brush_img) 
+                        pass
                     
                     layout = self.layout
                     layout.use_property_split = True
@@ -310,16 +311,12 @@ class UITexturePanel(Panel):
                         layout.template_image(active_texture, "image", image_user=active_texture.image_user)        #layout.template_image(texture, "image", image_user=texture.image_user)       
                         
 
-                    
-
-        
-
-
 # Create custom property group
 class CustomProp(PropertyGroup):
     '''name:  StringProperty() '''
     id: IntProperty()
     test: IntProperty()
+    print("MB create custom props")
     #temp_images = []
     
     
@@ -402,7 +399,7 @@ class material_paint(Operator):
         print("\nSTROKE 1: \n", stroke)
         print(40*"=")   
         #"""
-        print("stroke:\n", stroke)
+        #print("stroke:\n", stroke)
         return stroke
             
            
@@ -450,6 +447,7 @@ class material_paint(Operator):
 
         start_time = profiler(start_time, "node finder")
         return texture_maps
+
 
     def create_texture_slot_matrix(self):
         brush_id = bpy.context.scene.brush_index   
@@ -524,7 +522,7 @@ class material_paint(Operator):
                         bpy.context.object.active_material.paint_active_slot = m    
                         #print(brush_stroke, "\n\n")      
                         #start_time = profiler(start_time, "paint brush 3")        
-                        bpy.ops.paint.image_paint(stroke=stroke) 
+                        bpy.ops.paint.image_paint(stroke=stroke) #TODO: currently crashes blender after a stroke is performed
                         
             #start_time = profiler(start_time, "paint brush 4")
             
@@ -534,15 +532,15 @@ class material_paint(Operator):
 
     @classmethod
     def poll(cls, context):
-        print("poll image_paint")
+        #print("MB poll image_paint")
         return bpy.ops.paint.image_paint.poll()
 
    
     def modal(self, context, event): 
         #print(event.pressure)
-
+        print("MB keybinding test 1")
         if event.type in {'MOUSEMOVE'}:    
-            print("mouse move")
+            #print("MB modal mouse move")
             #start_time = profiler(time.perf_counter(), "Start modal Profiling")  
             #""" 
             stroke  = self.collect_strokes(context, event)
@@ -552,7 +550,7 @@ class material_paint(Operator):
             move_length = math.sqrt(move_x * move_x + move_y * move_y)            
             brush_spacing = stroke[0]["size"] * 2 * (context.tool_settings.image_paint.brush.spacing / 100) #40
             
-            print("mouse move event:", move_length)
+            #print("mouse move event:", move_length)
             #start_time = profiler(start_time, "modal profile 1")
 
             if (move_length >= brush_spacing):      #context.tool_settings.image_paint.brush.spacing
@@ -603,6 +601,7 @@ class material_paint(Operator):
     
 
     def invoke(self, context, event):
+        print("MB keybinding test 0")
         #start_time = profiler(time.perf_counter(), "Start invoke Profiling")
         if event.type in {'LEFTMOUSE'}:
             print("invoke stroke")
@@ -649,14 +648,6 @@ class material_paint(Operator):
         return {'RUNNING_MODAL'}
     
 
-def main(context, brush_id):
-    #brush_id is the index of the texture in the brush material list
-    ob = context.active_object
-    
-    def invoke(self, context, event):
-        info = 'Lets %s ' % ('see')
-        self.report({'INFO'}, info)
-
 
 classes = (
     Uilist_actions,
@@ -669,33 +660,39 @@ classes = (
     )
 
 
+addon_keymaps = []
+
 def register():    
     [register_class(c) for c in classes]
-
     bpy.types.Scene.listbrushmats = CollectionProperty(type=CustomProp)
-    km = bpy.context.window_manager.keyconfigs.default.keymaps['Image Paint']
-    kmi = km.keymap_items.new("paint.material_paint", 'LEFTMOUSE', 'PRESS', alt=True)
-    bpy.types.Scene.brush_index = IntProperty()
-    #bpy.types.Scene.brush_slots_num = IntProperty()
-    
+    bpy.types.Scene.brush_index = IntProperty()    
+    #bpy.types.Scene.brush_slots_num = IntProperty()    
     #bpy.types.Scene.listmaterials = CollectionProperty(type=CustomProp)
     #bpy.types.Scene.custom_index = IntProperty()
+    
+    # Keymapping
+    kc = bpy.context.window_manager.keyconfigs.addon
+    km = kc.keymaps.new(name="Image Paint", space_type='EMPTY', modal=False)
+    kmi = km.keymap_items.new("paint.material_paint", 'LEFTMOUSE', 'PRESS', alt=True)
+    kmi.active = True
+    addon_keymaps.append((km, kmi))
 
 
 def unregister():    
-    [unregister_class(c) for c in classes]
+    # remove keymaps
+    for km, kmi in addon_keymaps:
+        km.keymap_items.remove(kmi)
+    addon_keymaps.clear()
         
+    #bpy.types.Scene.brush_slots_num = IntProperty()   
+
     del bpy.types.Scene.listbrushmats
-    km = bpy.context.window_manager.keyconfigs.default.keymaps['Image Paint']
-    kmi = km.keymap_items.find('paint.material_paint')
-    km.keymap_items.remove(km.keymap_items[kmi])
-    
-    del bpy.types.Scene.brush_index
-    #bpy.types.Scene.brush_slots_num = IntProperty()
-    
-    
+    del bpy.types.Scene.brush_index    
     #del bpy.types.Scene.listmaterials
     #del bpy.types.Scene.custom_index
+
+    [unregister_class(c) for c in classes]
+        
 
 if __name__ == "__main__":
     register()
