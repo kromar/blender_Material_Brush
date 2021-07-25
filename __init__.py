@@ -475,21 +475,21 @@ class material_paint(Operator):
         for i in range(len(bpy.data.materials[brush_id].texture_paint_slots)):
         #for i in range(len(bpy.context.object.active_material.texture_paint_slots)):
             #print("\ni: ", i)
-            bs = bpy.data.materials[brush_id].texture_paint_images[i].name
-            ms = bpy.context.object.active_material.texture_paint_images[i]
+            brush_image = bpy.data.materials[brush_id].texture_paint_images[i].name
+            #ms = bpy.context.object.active_material.texture_paint_images[i]
             
             #print("brush texture: ", bs)
             
-            bs_type = get_dict_key(brush_maps, bs)
+            bs_type = get_dict_key(brush_maps, brush_image)
             ms_texture = material_maps[bs_type]
             #print("Brush type", bs_type)
             #print("Material texture", ms_texture, '\n')
             
             #now get the index of that texture 
-            for m in range(len(bpy.context.object.active_material.texture_paint_slots)):
-                if ms_texture in bpy.context.object.active_material.texture_paint_images[m].name:
+            for paint_slot in range(len(bpy.context.object.active_material.texture_paint_slots)):
+                if ms_texture in bpy.context.object.active_material.texture_paint_images[paint_slot].name:
                     #print(m, ms_texture)
-                    texture_slot_matrix.append(m)                    
+                    texture_slot_matrix.append(paint_slot)                    
                     
         #print(texture_slot_matrix)
         return texture_slot_matrix
@@ -506,14 +506,14 @@ class material_paint(Operator):
         if bpy.context.object.active_material.use_nodes and bpy.data.materials[brush_id].use_nodes:   
                 
             #start_time = profiler(start_time, "paint brush 0")
-            for i in range(len(bpy.data.materials[brush_id].texture_paint_slots)):
+            for slot in range(len(bpy.data.materials[brush_id].texture_paint_slots)):
             #for i in range(len(bpy.context.object.active_material.texture_paint_slots)):                
                 
                 #start_time = profiler(start_time, "paint brush 1")
                 # check if brush material contains texture paint slots 
                 # #(image texture nodes are considered texture paint slots)
-                if bpy.data.materials[brush_id].texture_paint_slots[i]:
-                    image = bpy.data.materials[brush_id].texture_paint_images[i]                    
+                if bpy.data.materials[brush_id].texture_paint_slots[slot]:
+                    image = bpy.data.materials[brush_id].texture_paint_images[slot]                    
                     brush_slot = image.name
                     #print("brush slots: ", brush_slot)
                     #create textures if they do not exists, they are required for painting
@@ -526,14 +526,26 @@ class material_paint(Operator):
                     bpy.context.tool_settings.image_paint.brush.texture = brush_texture_slot
 
                     # paint if active material contains texture slots
-                    m = self.texture_slot_matrix[i]
-                    if bpy.context.object.active_material.texture_paint_slots[m]:
-                        #print("mats slot: ", bpy.context.object.active_material.texture_paint_images[m].name, "\n")
-                        bpy.context.object.active_material.paint_active_slot = m    
-                        #print(brush_stroke, "\n\n")      
-                        #start_time = profiler(start_time, "paint brush 3")        
-                        bpy.ops.paint.image_paint(stroke=stroke) #TODO: currently crashes blender after a stroke is performed
+                    paint_slot = self.texture_slot_matrix[slot]
+                    paint_slot_name =  bpy.context.object.active_material.texture_paint_images[paint_slot].name
+                    
+                    if bpy.context.object.active_material.texture_paint_slots[paint_slot]:
+                        bpy.context.object.active_material.paint_active_slot = paint_slot   
+
+                        print("MB Stroke: ", paint_slot, paint_slot_name, brush_texture_slot.name)      
+                        #start_time = profiler(start_time, "paint brush 3")   
+                        """ 
+                        mode (enum in ['NORMAL', 'INVERT', 'SMOOTH'], (optional)) –   
+                          Stroke Mode, Action taken when a paint stroke is made
+                            NORMAL Regular, Apply brush normally.
+
+                            INVERT Invert, Invert action of brush for duration of stroke.
+
+                            SMOOTH Smooth, Switch brush to smooth mode for duration of stroke.  
+                        """                        
+                        bpy.ops.paint.image_paint(stroke=stroke, mode='NORMAL') #TODO: currently crashes blender after a stroke is performed
                         
+            print("-------")
             #start_time = profiler(start_time, "paint brush 4")
             
         else:
@@ -548,9 +560,9 @@ class material_paint(Operator):
    
     def modal(self, context, event): 
         #print(event.pressure)
-        print("MB keybinding test 1")
+        #print("MB keybinding test modal")
         if event.type in {'MOUSEMOVE'}:    
-            #print("MB modal mouse move")
+            #print("MB modal mouse event")
             #start_time = profiler(time.perf_counter(), "Start modal Profiling")  
             #""" 
             stroke  = self.collect_strokes(context, event)
@@ -611,10 +623,10 @@ class material_paint(Operator):
     
 
     def invoke(self, context, event):
-        print("MB keybinding test 0")
+        #print("MB keybinding test invoke")
         #start_time = profiler(time.perf_counter(), "Start invoke Profiling")
         if event.type in {'LEFTMOUSE'}:
-            print("invoke stroke")
+            #print("MB invoke mouse event")
             self.last_mouse_x = event.mouse_region_x
             self.last_mouse_y = event.mouse_region_y            
             self.lastangle = context.tool_settings.image_paint.brush.texture_slot.angle
