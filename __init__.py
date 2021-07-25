@@ -173,10 +173,20 @@ class UIBrushPanel(Panel):
         row = layout.row(align=True)
         row.operator("listbrushmats.list_action", text = "Save Textures").action = 'SAVE'
         row.operator("listbrushmats.list_action", text = "Discard Textures").action = 'LOAD'
-                
-        #set the texfaces using this material.
-        brush_id = context.scene.brush_index      #brush iNdex    
+
+            
+        #TODO: set the texfaces using this material.
+        brush_id = context.scene.brush_index      #brush index    
         main(context, brush_id)
+
+
+def main(context, brush_id):
+    #brush_id is the index of the texture in the brush material list
+    ob = context.active_object
+    
+    def invoke(self, context, event):
+        info = 'Lets %s ' % ('see')
+        self.report({'INFO'}, info)
 
 
 class UIMaterialPanel(Panel):
