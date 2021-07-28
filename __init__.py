@@ -17,7 +17,7 @@ import string
 import time
 from bpy.utils import register_class, unregister_class
 from bpy.props import IntProperty, CollectionProperty, EnumProperty
-from bpy.types import Panel, UIList, Operator, PropertyGroup
+from bpy.types import Panel, UIList, Operator, PropertyGroup, Brush
 
 
 def profiler(start_time=False, string=None): 
@@ -389,14 +389,24 @@ class material_paint(Operator):
         brushstroke = self.fill_brush_stroke(event.mouse_region_x, event.mouse_region_y) 
 
         brushstroke["is_start"] = True
+        
+        #print(Brush.use_pressure_strength)
+        if bpy.data.brushes["Brush"].use_pressure_strength:
+            brushstroke["pressure"] = event.pressure            
+            print(event.pressure, brushstroke["pressure"])  
+
+
         self.stroke.append(copy.deepcopy(brushstroke))
 
         brushstroke["is_start"] = False
         
+        
         self.stroke.append(brushstroke)
         args = (self, context)                
         x = self.stroke[0]["mouse"][0]
-        y = self.stroke[0]["mouse"][1]             
+        y = self.stroke[0]["mouse"][1]   
+        
+               
         
         stroke = []     ## TODO: why use local stroke? create new local stroke list?
         self.time = 0
@@ -532,7 +542,8 @@ class material_paint(Operator):
                     if bpy.context.object.active_material.texture_paint_slots[paint_slot]:
                         bpy.context.object.active_material.paint_active_slot = paint_slot   
 
-                        print("MB Stroke: ", paint_slot, paint_slot_name, brush_texture_slot.name)      
+                        print("MB Stroke: ", paint_slot, paint_slot_name, brush_texture_slot.name) 
+                        print(stroke)     
                         #start_time = profiler(start_time, "paint brush 3")   
                         """ 
                         mode (enum in ['NORMAL', 'INVERT', 'SMOOTH'], (optional)) –   
@@ -559,7 +570,6 @@ class material_paint(Operator):
 
    
     def modal(self, context, event): 
-        #print(event.pressure)
         #print("MB keybinding test modal")
         if event.type in {'MOUSEMOVE'}:    
             #print("MB modal mouse event")
@@ -571,6 +581,7 @@ class material_paint(Operator):
             move_y = event.mouse_region_y - self.last_mouse_y
             move_length = math.sqrt(move_x * move_x + move_y * move_y)            
             brush_spacing = stroke[0]["size"] * 2 * (context.tool_settings.image_paint.brush.spacing / 100) #40
+            
             
             #print("mouse move event:", move_length)
             #start_time = profiler(start_time, "modal profile 1")
