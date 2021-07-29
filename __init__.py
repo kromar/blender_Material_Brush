@@ -341,6 +341,7 @@ class material_paint(Operator):
     texture_slot_matrix = []
 
     def fill_brush_stroke(self, x, y):   
+        
         brushstroke = {
             "name": "defaultStroke",
             "pen_flip": False,
@@ -387,40 +388,36 @@ class material_paint(Operator):
     def collect_strokes(self, context, event):
         self.stroke = []    ## TODO: create new stroke list
         brushstroke = self.fill_brush_stroke(event.mouse_region_x, event.mouse_region_y) 
-
         brushstroke["is_start"] = True
         
-        #print(Brush.use_pressure_strength)
         if bpy.data.brushes["Brush"].use_pressure_strength:
-            brushstroke["pressure"] = event.pressure            
-            print(event.pressure, brushstroke["pressure"])  
+            brushstroke["pressure"] = bpy.data.brushes["Brush"].strength * event.pressure  
+        else:
+            brushstroke["pressure"] = bpy.data.brushes["Brush"].strength
+        #print(brushstroke["pressure"])
 
-
-        self.stroke.append(copy.deepcopy(brushstroke))
-
+        self.stroke = [brushstroke]
+        #self.stroke.append(copy.deepcopy(brushstroke))
         brushstroke["is_start"] = False
-        
-        
-        self.stroke.append(brushstroke)
-        args = (self, context)                
+        #self.stroke.append(brushstroke)
+
+        """ args = (self, context)                
         x = self.stroke[0]["mouse"][0]
         y = self.stroke[0]["mouse"][1]   
-        
-               
-        
         stroke = []     ## TODO: why use local stroke? create new local stroke list?
         self.time = 0
         stroke.append(self.fill_brush_stroke(x, y))
-        stroke[0]["is_start"] = True    
+        stroke[0]["is_start"] = True   
+        #"""  
         
         """
         print("SELF STROKE 1: \n", 40*"=")
         print(self.stroke) 
         print("\nSTROKE 1: \n", stroke)
-        print(40*"=")   
+        print(40*"=", end="\n\n")   
         #"""
         #print("stroke:\n", stroke)
-        return stroke
+        return self.stroke
             
            
     def node_finder(self, material):        
@@ -542,8 +539,8 @@ class material_paint(Operator):
                     if bpy.context.object.active_material.texture_paint_slots[paint_slot]:
                         bpy.context.object.active_material.paint_active_slot = paint_slot   
 
-                        print("MB Stroke: ", paint_slot, paint_slot_name, brush_texture_slot.name) 
-                        print(stroke)     
+                        #print("MB Stroke: ", paint_slot, paint_slot_name, brush_texture_slot.name) 
+                        #print(stroke)     
                         #start_time = profiler(start_time, "paint brush 3")   
                         """ 
                         mode (enum in ['NORMAL', 'INVERT', 'SMOOTH'], (optional)) –   
@@ -556,7 +553,6 @@ class material_paint(Operator):
                         """                        
                         bpy.ops.paint.image_paint(stroke=stroke, mode='NORMAL') #TODO: currently crashes blender after a stroke is performed
                         
-            print("-------")
             #start_time = profiler(start_time, "paint brush 4")
             
         else:
