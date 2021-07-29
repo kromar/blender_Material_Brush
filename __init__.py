@@ -580,7 +580,7 @@ class material_paint(Operator):
             move_x = event.mouse_region_x - self.last_mouse_x
             move_y = event.mouse_region_y - self.last_mouse_y
             move_length = math.sqrt(move_x * move_x + move_y * move_y)            
-            brush_spacing = stroke[0]["size"] * 2 * (context.tool_settings.image_paint.brush.spacing / 100) #40
+            brush_spacing = 100 / stroke[0]["size"] * (context.tool_settings.image_paint.brush.spacing)
             
             
             #print("mouse move event:", move_length)
