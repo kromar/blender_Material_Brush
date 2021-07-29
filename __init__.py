@@ -144,7 +144,7 @@ class UIBrushPanel(Panel):
     bl_region_type = 'UI'
     bl_category = 'PBR'
     bl_context = 'imagepaint'
-    bl_label = "PBR Brush"  
+    bl_label = "Brush Material"  
     COMPAT_ENGINES = {'BLENDER_EEVEE', 'BLENDER_WORKBENCH'}
 
     @classmethod
@@ -160,6 +160,14 @@ class UIBrushPanel(Panel):
 
         # PBR materials panel       
 
+        row = layout.row()
+        row.label(text="Alt+Left Mouse Button to Paint")
+        #layout.label(text="Save Painted Material")
+        row = layout.row(align=True)
+        row.operator("listbrushmats.list_action", text = "Save Textures").action = 'SAVE'
+        row.operator("listbrushmats.list_action", text = "Discard Textures").action = 'LOAD'
+
+        layout.separator()      
         rows = 2
         row = layout.row()
         row.operator("listbrushmats.list_action", icon='FILE_REFRESH', text="Update Brushes").action = 'UPDATE'
@@ -167,26 +175,12 @@ class UIBrushPanel(Panel):
         row = layout.row()
         row.template_list("MP_UL_brushitems", "", scene, "listbrushmats", scene, "brush_index", rows=rows)  
 
-        row = layout.row()
-        row.label(text="Alt+Left Mouse Button to paint")
-        #layout.label(text="Save Painted Material")
-        row = layout.row(align=True)
-        row.operator("listbrushmats.list_action", text = "Save Textures").action = 'SAVE'
-        row.operator("listbrushmats.list_action", text = "Discard Textures").action = 'LOAD'
 
             
         #TODO: set the texfaces using this material.
         brush_id = context.scene.brush_index      #brush index    
         main(context, brush_id)
 
-
-def main(context, brush_id):
-    #brush_id is the index of the texture in the brush material list
-    ob = context.active_object
-    
-    def invoke(self, context, event):
-        info = 'Lets %s ' % ('see')
-        self.report({'INFO'}, info)
 
 
 class UIMaterialPanel(Panel):
@@ -196,7 +190,7 @@ class UIMaterialPanel(Panel):
     bl_region_type = 'UI'
     bl_category = 'PBR'
     bl_context = 'imagepaint'
-    bl_label = "Materials"
+    bl_label = "Target Material"
 
     @classmethod
     def poll(cls, context):
@@ -676,6 +670,14 @@ class material_paint(Operator):
         #start_time = profiler(start_time, "total draw profile")
         return {'RUNNING_MODAL'}
     
+
+def main(context, brush_id):
+    #brush_id is the index of the texture in the brush material list
+    ob = context.active_object
+    
+    def invoke(self, context, event):
+        info = 'Lets %s ' % ('see')
+        self.report({'INFO'}, info)
 
 
 classes = (
