@@ -570,8 +570,7 @@ class material_paint(Operator):
             move_x = event.mouse_region_x - self.last_mouse_x
             move_y = event.mouse_region_y - self.last_mouse_y
             move_length = math.sqrt(move_x * move_x + move_y * move_y)            
-            brush_spacing = 100 / stroke[0]["size"] * (context.tool_settings.image_paint.brush.spacing)
-            
+            brush_spacing =  stroke[0]["size"] * (context.tool_settings.image_paint.brush.spacing) * 0.01
             
             #print("mouse move event:", move_length)
             #start_time = profiler(start_time, "modal profile 1")
